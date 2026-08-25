@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Query, Request
 
+from . import metrics
 from .db import connect
 from .geo import geo_hint
 from .pipeline import fetch_source
@@ -117,7 +118,7 @@ async def check_source(request: Request, source_id: int):
 
 @router.get("/stats")
 def stats(request: Request):
-    """概览统计：源数 / 文章数 / 受限源数 / 最近抓取时间。"""
+    """概览统计：源数 / 文章数 / 受限源数 / 最近抓取时间 + M1 管线指标。"""
     with connect(request.app.state.settings.db_path) as conn:
         sources_total = conn.execute("SELECT COUNT(*) FROM sources").fetchone()[0]
         articles_total = conn.execute("SELECT COUNT(*) FROM articles").fetchone()[0]
@@ -130,10 +131,20 @@ def stats(request: Request):
         by_country = conn.execute(
             "SELECT country, COUNT(*) AS n FROM sources GROUP BY country ORDER BY n DESC"
         ).fetchall()
+        # M1 指标：抽取成功率 / 发现成功率 / 哈希去重命中（口径见 app.metrics）
+        ext_ok, ext_total = metrics.extraction_stats(conn)
+        disc_ok, disc_total = metrics.discovery_stats(conn)
+        dedup = metrics.dedup_hits(conn)
     return {
         "sources_total": sources_total,
         "articles_total": articles_total,
         "geo_restricted_sources": restricted,
         "last_fetch_at": last_fetch,
         "sources_by_country": {r["country"]: r["n"] for r in by_country},
+        "extraction_success_rate": (ext_ok / ext_total) if ext_total else None,
+        "extraction_ok": ext_ok,
+        "extraction_total": ext_total,
+        "rss_discovery_ok": disc_ok,
+        "rss_discovery_total": disc_total,
+        "dedup_hits": dedup,
     }

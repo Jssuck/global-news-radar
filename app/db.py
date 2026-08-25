@@ -20,8 +20,11 @@ CREATE TABLE IF NOT EXISTS sources (
     language TEXT NOT NULL,
     media_type TEXT,
     influence_tier TEXT,
-    feed_url TEXT NOT NULL UNIQUE,
-    interval_minutes INTEGER NOT NULL DEFAULT 10,  -- 源级轮询间隔（分钟）
+    feed_url TEXT NOT NULL UNIQUE,      -- rss 策略为 feed 地址；sitemap 策略为 sitemap/站点根地址
+    interval_minutes INTEGER NOT NULL DEFAULT 10,  -- 源级轮询间隔（分钟，自适应调整）
+    empty_streak INTEGER NOT NULL DEFAULT 0,       -- 连续无新文章轮数（自适应退避状态）
+    discovery_strategy TEXT NOT NULL DEFAULT 'rss', -- rss | sitemap（M1 二级发现）
+    sitemap_url TEXT,                   -- sitemap 策略的显式 sitemap 地址（可空，空则走 robots.txt 发现）
     geo_status TEXT NOT NULL DEFAULT 'unknown',    -- unknown | ok | geo_restricted
     required_region TEXT,
     geo_evidence TEXT,
@@ -50,8 +53,11 @@ CREATE TABLE IF NOT EXISTS fetch_log (
     source_id INTEGER NOT NULL REFERENCES sources(id),
     fetched_at TEXT NOT NULL,
     http_status INTEGER,
-    result TEXT NOT NULL,                 -- ok | not_modified | geo_restricted | anti_bot | error
+    result TEXT NOT NULL,                 -- ok | not_modified | geo_restricted | anti_bot | robots_blocked | error
     new_articles INTEGER NOT NULL DEFAULT 0,
+    extraction_ok INTEGER NOT NULL DEFAULT 0,    -- 本轮正文抽取成功篇数
+    extraction_total INTEGER NOT NULL DEFAULT 0, -- 本轮正文抓取尝试篇数
+    dedup_hits INTEGER NOT NULL DEFAULT 0,       -- 本轮命中 URL 哈希去重的条数
     detail TEXT
 );
 
@@ -71,6 +77,27 @@ def connect(db_path: str) -> sqlite3.Connection:
     return conn
 
 
+# 旧库增量迁移：M1 新增列（新库已由 SCHEMA 覆盖，旧库用 ALTER TABLE 补齐）
+_MIGRATIONS = (
+    ("sources", "empty_streak", "empty_streak INTEGER NOT NULL DEFAULT 0"),
+    ("sources", "discovery_strategy",
+     "discovery_strategy TEXT NOT NULL DEFAULT 'rss'"),
+    ("sources", "sitemap_url", "sitemap_url TEXT"),
+    ("fetch_log", "extraction_ok", "extraction_ok INTEGER NOT NULL DEFAULT 0"),
+    ("fetch_log", "extraction_total", "extraction_total INTEGER NOT NULL DEFAULT 0"),
+    ("fetch_log", "dedup_hits", "dedup_hits INTEGER NOT NULL DEFAULT 0"),
+)
+
+
+def _ensure_column(conn: sqlite3.Connection, table: str, column: str, ddl: str) -> None:
+    """幂等加列：PRAGMA table_info 检查缺失再 ALTER TABLE。"""
+    cols = {row[1] for row in conn.execute(f"PRAGMA table_info({table})")}
+    if cols and column not in cols:
+        conn.execute(f"ALTER TABLE {table} ADD COLUMN {ddl}")
+
+
 def init_db(db_path: str) -> None:
     with connect(db_path) as conn:
         conn.executescript(SCHEMA)
+        for table, column, ddl in _MIGRATIONS:
+            _ensure_column(conn, table, column, ddl)

@@ -99,3 +99,27 @@ def settings_obj():
     from app.config import get_settings
 
     return get_settings()
+
+
+@pytest.fixture()
+def client(tmp_path, monkeypatch):
+    """TestClient：独立临时库 + check 端点 mock 网络（离线）。"""
+    from fastapi.testclient import TestClient
+
+    from app import pipeline
+    from app.db import init_db
+    from app.main import app
+
+    monkeypatch.setenv("GNR_DB_PATH", str(tmp_path / "api-test.db"))
+    init_db(str(tmp_path / "api-test.db"))
+    monkeypatch.setattr(pipeline, "default_client_factory",
+                        make_mock_client_factory({
+                            "https://feeds.bbci.co.uk/news/rss.xml":
+                                httpx.Response(200, text=FEED_XML),
+                            "https://example.com/news/story-one":
+                                httpx.Response(200, text=ARTICLE_HTML),
+                            "https://example.com/news/story-two":
+                                httpx.Response(200, text=ARTICLE_HTML),
+                        }))
+    with TestClient(app) as c:
+        yield c

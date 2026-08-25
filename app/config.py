@@ -28,6 +28,8 @@ class Settings:
     request_timeout: float
     proxy_config: str
     disable_poller: bool
+    max_concurrency: int        # 轮询并发上限（asyncio 信号量）
+    per_host_min_interval: float  # 同 host 两次请求最小间隔（秒，礼貌限速）
     user_agent: str = "GlobalNewsRadar-MVP/0.1 (+https://github.com/Jssuck/global-news-radar)"
 
 
@@ -42,4 +44,6 @@ def get_settings() -> Settings:
         request_timeout=float(env.get("GNR_REQUEST_TIMEOUT", "15")),
         proxy_config=env.get("GNR_PROXY_CONFIG", "config/proxies.yaml"),
         disable_poller=env.get("GNR_DISABLE_POLLER", "0") == "1",
+        max_concurrency=int(env.get("GNR_MAX_CONCURRENCY", "16")),
+        per_host_min_interval=float(env.get("GNR_PER_HOST_MIN_INTERVAL", "2")),
     )

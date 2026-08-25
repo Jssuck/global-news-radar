@@ -32,30 +32,40 @@ def load_seed_sources(db_path: str, sources_dir: Path) -> int:
             if not isinstance(doc, dict):
                 continue
             disc = doc.get("discovery") or {}
-            if disc.get("strategy") != "rss" or not disc.get("feed_url"):
-                continue  # MVP 只支持 rss 策略，其余策略留给 v1.0 四级降级
+            strategy = disc.get("strategy", "rss")
+            if strategy not in ("rss", "sitemap"):
+                continue  # M1 支持 rss/sitemap 两级，html/聚合层留给后续里程碑
+            # sitemap 策略无 feed_url 时以 sitemap_url 或 base_url 作端点（兼作 upsert 键）
+            endpoint = disc.get("feed_url") if strategy == "rss" else (
+                disc.get("sitemap_url") or disc.get("feed_url") or doc.get("base_url"))
+            if not endpoint:
+                continue
             interval = parse_interval_minutes(
                 str((doc.get("update_profile") or {}).get("estimated_interval", ""))
             )
             geo = doc.get("geo") or {}
+            # 注意：ON CONFLICT 不回写 interval_minutes，保留自适应轮询的运行时值
             conn.execute(
                 """
                 INSERT INTO sources (source_key, name, base_url, country, language,
                                      media_type, influence_tier, feed_url,
-                                     interval_minutes, geo_status)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                     interval_minutes, geo_status,
+                                     discovery_strategy, sitemap_url)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(feed_url) DO UPDATE SET
                     name=excluded.name, base_url=excluded.base_url,
                     country=excluded.country, language=excluded.language,
                     media_type=excluded.media_type,
                     influence_tier=excluded.influence_tier,
-                    interval_minutes=excluded.interval_minutes
+                    discovery_strategy=excluded.discovery_strategy,
+                    sitemap_url=excluded.sitemap_url
                 """,
                 (
                     path.stem, doc.get("name", path.stem), doc.get("base_url", ""),
                     doc.get("country", ""), doc.get("language", ""),
                     doc.get("media_type"), doc.get("influence_tier"),
-                    disc["feed_url"], interval, geo.get("status", "unknown"),
+                    endpoint, interval, geo.get("status", "unknown"),
+                    strategy, disc.get("sitemap_url"),
                 ),
             )
             count += 1

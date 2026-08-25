@@ -1,8 +1,11 @@
-"""第一级规则清洗（MVP 简化版）。
+"""第一级规则清洗（M1 版）。
 
-实现：URL 规范化 + SHA-256 精确去重、trafilatura 正文/元数据抽取、简易语种检测。
+实现：URL 规范化 + SHA-256 精确去重、正文抽取兜底链、简易语种检测。
+抽取兜底链（设计 4.1，M1 落地）：
+    trafilatura(fast 模式) → trafilatura(favor_recall 模式) → newspaper4k（可选）
+判定失败标准：正文为空或 < 200 字符（沿 MVP 口径）；逐级失败即降级并记日志，
+newspaper4k 为可选依赖（optional import），未安装则跳过该级。
 简化点（相对设计 4.1）：
-- 无 newspaper4k/readability 兜底链，仅 trafilatura 主抽取；
 - 无 ftfy 编码修复（trafilatura 内部已做基本解码）；
 - 语种检测为字符集启发式（汉字/假名/谚文/西里尔占比）+ 源声明语种兜底，
   未引入 fastText/Lingua 双分类器；
@@ -11,10 +14,19 @@
 from __future__ import annotations
 
 import hashlib
+import logging
 import re
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 import trafilatura
+
+log = logging.getLogger("gnr.cleaner")
+
+# newspaper4k 为可选依赖（不入 requirements.txt 主依赖），未安装则第三级兜底跳过
+try:  # pragma: no cover - 取决于环境是否安装
+    from newspaper import Article as _NewspaperArticle
+except ImportError:  # pragma: no cover
+    _NewspaperArticle = None
 
 # 常见跟踪参数，规范化时剔除
 TRACKING_PARAMS = re.compile(r"^(utm_|fbclid|gclid|mc_cid|mc_eid|igshid|spm|ref_)", re.IGNORECASE)
@@ -39,26 +51,83 @@ def url_hash(normalized_url: str) -> str:
     return hashlib.sha256(normalized_url.encode("utf-8")).hexdigest()
 
 
-def extract_article(html: str, url: str) -> dict:
-    """trafilatura 抽取正文与元数据；失败时返回空字段由调用方降级处理。"""
-    result: dict = {"title": None, "body": None, "published_at": None, "authors": None}
-    if not html:
-        return result
+# 正文抽取失败判定阈值（沿 MVP 口径：正文空或短于 200 字符视为失败）
+MIN_BODY_LEN = 200
+
+
+def _body_ok(body: str | None) -> bool:
+    """抽取结果是否达标：非空且长度 ≥ MIN_BODY_LEN。"""
+    return bool(body) and len(body) >= MIN_BODY_LEN
+
+
+def _extract_trafilatura(html: str, url: str, *, favor_recall: bool) -> str | None:
+    """trafilatura 抽取正文（fast 或 favor_recall 模式），失败返回 None。"""
     extracted = trafilatura.extract(
         html,
         url=url,
         include_comments=False,
         include_tables=False,
         output_format="txt",
-        with_metadata=True,
+        favor_recall=favor_recall,
+        fast=not favor_recall,
     )
+    return extracted.strip() if extracted else None
+
+
+def _extract_newspaper(html: str, url: str) -> str | None:
+    """newspaper4k 第三级兜底；未安装返回 None（由调用方记日志）。"""
+    if _NewspaperArticle is None:
+        return None
+    try:  # newspaper 解析异常时按失败处理，不中断兜底链
+        article = _NewspaperArticle(url)
+        article.set_html(html)
+        article.parse()
+        text = (article.text or "").strip()
+        return text or None
+    except Exception:
+        log.debug("newspaper4k 抽取异常", exc_info=True)
+        return None
+
+
+def extract_article(html: str, url: str) -> dict:
+    """三级兜底链抽取正文与元数据；全部失败返回空字段由调用方降级处理。
+
+    返回 dict 含 extractor 字段记录命中级别：
+    trafilatura-fast / trafilatura-recall / newspaper4k / None。
+    """
+    result: dict = {"title": None, "body": None, "published_at": None,
+                    "authors": None, "extractor": None}
+    if not html:
+        return result
+
+    # 元数据始终走 trafilatura（即使正文兜底到 newspaper4k，标题/日期仍可用）
     meta = trafilatura.extract_metadata(html, default_url=url)
-    if extracted:
-        result["body"] = extracted.strip() or None
     if meta:
         result["title"] = meta.title
         result["published_at"] = meta.date
         result["authors"] = meta.author
+
+    # 第一级：trafilatura fast 模式（最快路径）
+    body = _extract_trafilatura(html, url, favor_recall=False)
+    if _body_ok(body):
+        result.update(body=body, extractor="trafilatura-fast")
+        return result
+
+    # 第二级：trafilatura favor_recall 模式（牺牲精度换召回）
+    body = _extract_trafilatura(html, url, favor_recall=True)
+    if _body_ok(body):
+        log.info("fast 模式抽取不达标，favor_recall 兜底成功: %s", url)
+        result.update(body=body, extractor="trafilatura-recall")
+        return result
+
+    # 第三级：newspaper4k（可选依赖，未安装则跳过并记日志）
+    if _NewspaperArticle is None:
+        log.info("正文抽取前两级不达标，newspaper4k 未安装，跳过第三级: %s", url)
+        return result
+    body = _extract_newspaper(html, url)
+    if _body_ok(body):
+        log.info("trafilatura 两级均不达标，newspaper4k 兜底成功: %s", url)
+        result.update(body=body, extractor="newspaper4k")
     return result
 
 

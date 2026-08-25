@@ -1,34 +1,9 @@
 """API 与页面冒烟测试（TestClient，离线）。
 
 check 端点经 monkeypatch 注入 MockTransport，不发真实网络请求。
+（client 夹具已上移到 conftest.py，供 API/metrics 测试共用。）
 """
-import httpx
-import pytest
-from fastapi.testclient import TestClient
-
-from app import pipeline
-from app.db import connect, init_db
-from app.main import app
-from tests.conftest import ARTICLE_HTML, FEED_XML, make_mock_client_factory
-
-
-@pytest.fixture()
-def client(tmp_path, monkeypatch):
-    # 指向独立临时库，禁用轮询在 conftest 中已设置
-    monkeypatch.setenv("GNR_DB_PATH", str(tmp_path / "api-test.db"))
-    init_db(str(tmp_path / "api-test.db"))
-    # check 端点的网络访问改为 mock
-    monkeypatch.setattr(pipeline, "default_client_factory",
-                        make_mock_client_factory({
-                            "https://feeds.bbci.co.uk/news/rss.xml":
-                                httpx.Response(200, text=FEED_XML),
-                            "https://example.com/news/story-one":
-                                httpx.Response(200, text=ARTICLE_HTML),
-                            "https://example.com/news/story-two":
-                                httpx.Response(200, text=ARTICLE_HTML),
-                        }))
-    with TestClient(app) as c:
-        yield c
+from app.db import connect
 
 
 def test_sources_endpoint(client):
