@@ -41,5 +41,3 @@ jobs:
         run: |
           ! grep -rInE "(github_pat_[A-Za-z0-9_]{20,}|sk-[A-Za-z0-9]{20,})" --exclude-dir=.git .
 
-# 说明：本文件是 CI 工作流模板。因推送 token 暂无 workflow scope，暂存于此。
-# 启用方式：cp docs/harness/ci.yml.example .github/workflows/ci.yml 并提交（需 token 具备 workflow 权限）。
