@@ -1,0 +1,44 @@
+Global News Radar
+Copyright (c) 2026 Global News Radar contributors
+
+This project is licensed under the MIT License (see LICENSE).
+
+Third-party components
+----------------------
+This project integrates or references the following open-source components.
+Only components under permissive licenses (MIT / Apache-2.0 / BSD) are
+integrated as code dependencies; copyleft components (GPL/AGPL) are never
+vendored and may only be used, if at all, as independently deployed network
+services.
+
+- trafilatura — Apache-2.0 — https://github.com/adbar/trafilatura
+- newspaper4k — MIT — https://github.com/AndyTheFactory/newspaper4k
+- feedparser — BSD-2-Clause — https://github.com/kurtmckee/feedparser
+- FastAPI — MIT — https://github.com/fastapi/fastapi
+- httpx — BSD-3-Clause — https://github.com/encode/httpx
+- Playwright — Apache-2.0 — https://github.com/microsoft/playwright
+- Celery — BSD-3-Clause — https://github.com/celery/celery
+- Next.js — MIT — https://github.com/vercel/next.js
+- Tailwind CSS — MIT — https://github.com/tailwindlabs/tailwindcss
+- shadcn/ui — MIT — https://github.com/shadcn-ui/ui
+- Better Auth — MIT — https://github.com/better-auth/better-auth
+- Casbin — Apache-2.0 — https://github.com/casbin/casbin
+- pgvector — PostgreSQL License — https://github.com/pgvector/pgvector
+- Meilisearch — MIT — https://github.com/meilisearch/meilisearch
+- Valkey — BSD-3-Clause — https://github.com/valkey-io/valkey
+
+Deployed as separate network services (not linked code):
+- RabbitMQ — MPL-2.0
+- MinIO — AGPL-3.0 (object storage service; may be replaced by any S3-compatible store)
+
+Data references (not redistributed, used as source-discovery references):
+- GDELT Project — https://www.gdeltproject.org/
+- Media Cloud — https://mediacloud.org/
+
+Content notice
+--------------
+News content fetched by this software belongs to its original publishers.
+This platform does not redistribute full article text; it stores and serves
+titles, very short extracts, and links to the original articles, and it
+honors robots.txt. The MIT license applies to code only, not to third-party
+content processed by the software.

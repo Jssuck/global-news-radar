@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+
+jobs:
+  skill-scripts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install PyYAML
+        run: pip install pyyaml
+      - name: Validate skill scripts compile
+        run: |
+          python -m py_compile skills/*/scripts/*.py
+      - name: Smoke test gate_check.py
+        run: |
+          echo '{"a": 10}' > /tmp/m.json
+          echo '[{"key":"a","op":">=","target":5,"critical":true}]' > /tmp/c.json
+          python skills/milestone-gate-review/scripts/gate_check.py --metrics /tmp/m.json --criteria /tmp/c.json
+      - name: Smoke test qc_sample.py
+        run: |
+          printf '{"id":"1","language":"en"}\n{"id":"2","language":"zh"}\n' > /tmp/a.jsonl
+          python skills/cleaning-pipeline-qc/scripts/qc_sample.py /tmp/a.jsonl --per-lang 5 > /dev/null
+
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Harness docs exist
+        run: |
+          test -f docs/harness/00-overview.md
+          test -f docs/harness/03-acceptance-criteria.md
+          test -f docs/design/design-v1.0.md
+      - name: No secrets committed
+        run: |
+          ! grep -rInE "(github_pat_[A-Za-z0-9_]{20,}|sk-[A-Za-z0-9]{20,})" --exclude-dir=.git .
+
+# 说明：本文件是 CI 工作流模板。因推送 token 暂无 workflow scope，暂存于此。
+# 启用方式：cp docs/harness/ci.yml.example .github/workflows/ci.yml 并提交（需 token 具备 workflow 权限）。
