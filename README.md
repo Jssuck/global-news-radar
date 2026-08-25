@@ -104,8 +104,10 @@ cd global-news-radar
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 uvicorn app.main:app --reload
-# open http://127.0.0.1:8000
+# open http://127.0.0.1:8000 (news feed) · /sources (source board) · /docs (OpenAPI)
 ```
+
+Optional: copy `.env.example` to `.env` to tune polling interval etc. Run the offline test suite with `pip install -r requirements-dev.txt && python -m pytest tests -q`. MVP scope, simplifications, and gaps vs the v1.0 design: [docs/mvp/mvp-spec.md](docs/mvp/mvp-spec.md).
 
 ## Contributing
 
