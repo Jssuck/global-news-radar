@@ -1,0 +1,16 @@
+name: Excélsior
+base_url: https://www.excelsior.com.mx
+country: mx
+language: es
+media_type: newspaper
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: "https://www.excelsior.com.mx/rss/portada.xml"
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT10M
+legal:
+  robots_checked: true
+maintainers: []

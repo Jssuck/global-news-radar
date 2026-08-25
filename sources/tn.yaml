@@ -1,0 +1,16 @@
+name: TN (Todo Noticias)
+base_url: https://tn.com.ar
+country: ar
+language: es
+media_type: tv
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: "https://tn.com.ar/rss.xml"
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT10M
+legal:
+  robots_checked: true
+maintainers: []

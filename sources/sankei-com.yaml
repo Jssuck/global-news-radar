@@ -1,0 +1,16 @@
+name: "産経新聞 (Sankei Shimbun)"
+base_url: https://www.sankei.com
+country: jp
+language: ja
+media_type: newspaper
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: "https://assets.wor.jp/rss/rdf/sankei/flash.rdf"
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT10M
+legal:
+  robots_checked: true
+maintainers: []

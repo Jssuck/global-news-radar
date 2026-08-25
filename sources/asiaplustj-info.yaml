@@ -1,0 +1,16 @@
+name: "Азия-Плюс (Asia-Plus Tajikistan)"
+base_url: https://asiaplustj.info
+country: tj
+language: ru
+media_type: newspaper
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: "https://asiaplustj.info/rss"
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT1H
+legal:
+  robots_checked: true
+maintainers: []

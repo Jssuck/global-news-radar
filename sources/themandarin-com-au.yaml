@@ -1,0 +1,16 @@
+name: "The Mandarin"
+base_url: https://www.themandarin.com.au
+country: au
+language: en
+media_type: online
+influence_tier: major
+discovery:
+  strategy: rss
+  feed_url: "https://www.themandarin.com.au/feed/"
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT1H
+legal:
+  robots_checked: true
+maintainers: []

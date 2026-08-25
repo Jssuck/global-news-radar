@@ -1,0 +1,16 @@
+name: Globes
+base_url: https://en.globes.co.il
+country: il
+language: en
+media_type: newspaper
+influence_tier: major
+discovery:
+  strategy: rss
+  feed_url: https://en.globes.co.il/WebService/Rss/RssFeeder.asmx/FeederNode?iID=942
+geo:
+  status: unknown
+update_profile:
+  estimated_interval: PT30M
+legal:
+  robots_checked: true
+maintainers: []

@@ -1,0 +1,16 @@
+name: Gabon Review
+base_url: https://www.gabonreview.com
+country: ga
+language: fr
+media_type: newspaper
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://www.gabonreview.com/rss/
+geo:
+  status: unknown
+update_profile:
+  estimated_interval: PT30M
+legal:
+  robots_checked: true
+maintainers: []

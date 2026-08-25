@@ -1,0 +1,16 @@
+name: "VietnamPlus (Vietnam News Agency)"
+base_url: https://www.vietnamplus.vn
+country: vn
+language: vi
+media_type: agency
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: "https://www.vietnamplus.vn/rss/home.rss"
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT15M
+legal:
+  robots_checked: true
+maintainers: []

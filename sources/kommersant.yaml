@@ -1,0 +1,16 @@
+name: Kommersant
+base_url: https://www.kommersant.ru
+country: ru
+language: ru
+media_type: newspaper
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://www.kommersant.ru/RSS/news.xml
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT15M
+legal:
+  robots_checked: true
+maintainers: []

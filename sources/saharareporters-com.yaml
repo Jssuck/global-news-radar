@@ -1,0 +1,16 @@
+name: Sahara Reporters
+base_url: https://saharareporters.com
+country: ng
+language: en
+media_type: online
+influence_tier: major
+discovery:
+  strategy: rss
+  feed_url: https://saharareporters.com/rss.xml
+geo:
+  status: unknown
+update_profile:
+  estimated_interval: PT1H
+legal:
+  robots_checked: true
+maintainers: []

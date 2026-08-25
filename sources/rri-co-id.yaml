@@ -1,0 +1,16 @@
+name: "RRI (Radio Republik Indonesia)"
+base_url: https://www.rri.co.id
+country: id
+language: id
+media_type: radio
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: "https://www.rri.co.id/rss"
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT15M
+legal:
+  robots_checked: true
+maintainers: []

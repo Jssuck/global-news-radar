@@ -1,0 +1,16 @@
+name: NV.ua
+base_url: https://nv.ua
+country: ua
+language: uk
+media_type: online
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://nv.ua/rss/all.xml
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT15M
+legal:
+  robots_checked: true
+maintainers: []

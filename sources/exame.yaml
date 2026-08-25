@@ -1,0 +1,16 @@
+name: EXAME
+base_url: https://exame.com
+country: br
+language: pt-BR
+media_type: newspaper
+influence_tier: major
+discovery:
+  strategy: rss
+  feed_url: "https://exame.com/feed/"
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT30M
+legal:
+  robots_checked: true
+maintainers: []

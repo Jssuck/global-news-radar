@@ -1,0 +1,16 @@
+name: HabariLeo
+base_url: https://habarileo.co.tz
+country: tz
+language: sw
+media_type: newspaper
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://habarileo.co.tz/rss
+geo:
+  status: unknown
+update_profile:
+  estimated_interval: PT1H
+legal:
+  robots_checked: true
+maintainers: []

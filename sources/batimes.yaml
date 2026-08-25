@@ -1,0 +1,16 @@
+name: Buenos Aires Times
+base_url: https://www.batimes.com.ar
+country: ar
+language: en
+media_type: newspaper
+influence_tier: regional
+discovery:
+  strategy: rss
+  feed_url: "https://www.batimes.com.ar/feed"
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT1H
+legal:
+  robots_checked: true
+maintainers: []

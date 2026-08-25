@@ -1,0 +1,16 @@
+name: ProPublica
+base_url: https://www.propublica.org
+country: us
+language: en
+media_type: online
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: "https://www.propublica.org/feeds/propublica/main"
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT1H
+legal:
+  robots_checked: true
+maintainers: []

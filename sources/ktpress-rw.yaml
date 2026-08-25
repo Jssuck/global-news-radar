@@ -1,0 +1,16 @@
+name: KT Press
+base_url: https://ktpress.rw
+country: rw
+language: en
+media_type: online
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://ktpress.rw/feed/
+geo:
+  status: unknown
+update_profile:
+  estimated_interval: PT29M
+legal:
+  robots_checked: true
+maintainers: []

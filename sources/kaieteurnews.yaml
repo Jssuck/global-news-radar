@@ -1,0 +1,16 @@
+name: Kaieteur News
+base_url: https://www.kaieteurnewsonline.com
+country: gy
+language: en
+media_type: newspaper
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: "https://www.kaieteurnewsonline.com/feed/"
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT30M
+legal:
+  robots_checked: true
+maintainers: []

@@ -1,0 +1,16 @@
+name: Anadolu Agency
+base_url: https://www.aa.com.tr
+country: tr
+language: tr
+media_type: agency
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://www.aa.com.tr/tr/rss/default?cat=guncel
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT10M
+legal:
+  robots_checked: true
+maintainers: []

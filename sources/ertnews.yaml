@@ -1,0 +1,16 @@
+name: ERT News
+base_url: https://www.ertnews.gr
+country: gr
+language: el
+media_type: tv
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://www.ertnews.gr/feed/
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT10M
+legal:
+  robots_checked: true
+maintainers: []

@@ -1,0 +1,16 @@
+name: Radio Dabanga
+base_url: https://www.dabangasudan.org
+country: sd
+language: en
+media_type: radio
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://www.dabangasudan.org/en/all-news/rss
+geo:
+  status: unknown
+update_profile:
+  estimated_interval: PT2H
+legal:
+  robots_checked: true
+maintainers: []

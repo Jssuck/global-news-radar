@@ -1,0 +1,16 @@
+name: The Namibian
+base_url: https://www.namibian.com.na
+country: na
+language: en
+media_type: newspaper
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://www.namibian.com.na/feed/
+geo:
+  status: unknown
+update_profile:
+  estimated_interval: PT12M
+legal:
+  robots_checked: true
+maintainers: []

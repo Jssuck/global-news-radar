@@ -1,0 +1,16 @@
+name: Ouest-France
+base_url: https://www.ouest-france.fr
+country: fr
+language: fr
+media_type: newspaper
+influence_tier: major
+discovery:
+  strategy: rss
+  feed_url: https://www.ouest-france.fr/rss-en-continu.xml
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT15M
+legal:
+  robots_checked: true
+maintainers: []

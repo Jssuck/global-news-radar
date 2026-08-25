@@ -1,0 +1,17 @@
+name: RT
+base_url: https://www.rt.com
+country: ru
+language: en
+media_type: tv
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://www.rt.com/rss/
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT10M
+legal:
+  robots_checked: true
+  notes: banned in EU/UK by sanctions
+maintainers: []

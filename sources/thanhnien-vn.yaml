@@ -1,0 +1,16 @@
+name: "Thanh Niên"
+base_url: https://thanhnien.vn
+country: vn
+language: vi
+media_type: newspaper
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: "https://thanhnien.vn/rss/home.rss"
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT10M
+legal:
+  robots_checked: true
+maintainers: []

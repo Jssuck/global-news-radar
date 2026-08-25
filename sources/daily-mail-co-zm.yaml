@@ -1,0 +1,16 @@
+name: Zambia Daily Mail
+base_url: https://www.daily-mail.co.zm
+country: zm
+language: en
+media_type: newspaper
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://www.daily-mail.co.zm/feed/
+geo:
+  status: unknown
+update_profile:
+  estimated_interval: PT30M
+legal:
+  robots_checked: true
+maintainers: []

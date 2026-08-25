@@ -1,0 +1,16 @@
+name: El Siglo de Torreón
+base_url: https://www.elsiglodetorreon.com.mx
+country: mx
+language: es
+media_type: newspaper
+influence_tier: major
+discovery:
+  strategy: rss
+  feed_url: "https://www.elsiglodetorreon.com.mx/index.xml"
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT30M
+legal:
+  robots_checked: true
+maintainers: []

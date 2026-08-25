@@ -1,0 +1,16 @@
+name: Observador
+base_url: https://observador.pt
+country: pt
+language: pt
+media_type: online
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://observador.pt/feed/
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT15M
+legal:
+  robots_checked: true
+maintainers: []

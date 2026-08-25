@@ -1,0 +1,17 @@
+name: "Kompas"
+base_url: https://www.kompas.com
+country: id
+language: id
+media_type: newspaper
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: "https://news.kompas.com/rss"
+geo:
+  status: unknown
+  evidence: "本沙箱返回 HTTP 202 空响应(反爬)；feed 为官方公开路径，待部署端复验"
+update_profile:
+  estimated_interval: PT10M
+legal:
+  robots_checked: true
+maintainers: []

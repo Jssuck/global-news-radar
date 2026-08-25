@@ -1,0 +1,16 @@
+name: "朝日新聞デジタル (The Asahi Shimbun)"
+base_url: https://www.asahi.com
+country: jp
+language: ja
+media_type: newspaper
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: "https://www.asahi.com/rss/asahi/newsheadlines.rdf"
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT10M
+legal:
+  robots_checked: true
+maintainers: []

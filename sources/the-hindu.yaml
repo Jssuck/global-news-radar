@@ -9,6 +9,7 @@ discovery:
   feed_url: https://www.thehindu.com/news/national/feeder/default.rss
 geo:
   status: unknown
+  evidence: "本沙箱出口对该域名连接超时；feed 为全球公认有效路径，待部署端复验"
 update_profile:
   estimated_interval: PT10M
 legal:

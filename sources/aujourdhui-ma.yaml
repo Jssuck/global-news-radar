@@ -1,0 +1,16 @@
+name: Aujourd'hui le Maroc
+base_url: https://aujourdhui.ma
+country: ma
+language: fr
+media_type: newspaper
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://aujourdhui.ma/rss
+geo:
+  status: unknown
+update_profile:
+  estimated_interval: PT30M
+legal:
+  robots_checked: true
+maintainers: []

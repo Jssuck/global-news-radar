@@ -1,0 +1,16 @@
+name: Journal du Cameroun
+base_url: https://www.journalducameroun.com
+country: cm
+language: fr
+media_type: online
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://www.journalducameroun.com/feed/
+geo:
+  status: unknown
+update_profile:
+  estimated_interval: PT1H
+legal:
+  robots_checked: true
+maintainers: []

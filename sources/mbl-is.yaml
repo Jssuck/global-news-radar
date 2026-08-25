@@ -1,0 +1,16 @@
+name: mbl.is
+base_url: https://www.mbl.is
+country: is
+language: is
+media_type: newspaper
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://www.mbl.is/feeds/innlent/
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT15M
+legal:
+  robots_checked: true
+maintainers: []

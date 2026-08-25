@@ -1,0 +1,16 @@
+name: Dnevnik.hr
+base_url: https://dnevnik.hr
+country: hr
+language: hr
+media_type: online
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://dnevnik.hr/rss
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT15M
+legal:
+  robots_checked: true
+maintainers: []

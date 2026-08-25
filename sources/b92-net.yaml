@@ -1,0 +1,16 @@
+name: B92
+base_url: https://www.b92.net
+country: rs
+language: sr
+media_type: tv
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://www.b92.net/info/rss/vesti.xml
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT10M
+legal:
+  robots_checked: true
+maintainers: []

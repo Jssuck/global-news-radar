@@ -1,0 +1,16 @@
+name: Radio Dalsan
+base_url: https://www.radiodalsan.com
+country: so
+language: en
+media_type: radio
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://www.radiodalsan.com/feed/
+geo:
+  status: unknown
+update_profile:
+  estimated_interval: PT1H
+legal:
+  robots_checked: true
+maintainers: []

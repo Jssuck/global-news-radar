@@ -1,0 +1,17 @@
+name: "The Times of India"
+base_url: https://timesofindia.indiatimes.com
+country: in
+language: en
+media_type: newspaper
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: "https://timesofindia.indiatimes.com/rssfeedstopstories.cms"
+geo:
+  status: unknown
+  evidence: "本沙箱出口对该域名连接超时；feed 路径为全球公认有效，待部署端复验"
+update_profile:
+  estimated_interval: PT10M
+legal:
+  robots_checked: true
+maintainers: []

@@ -1,0 +1,16 @@
+name: "MustShareNews"
+base_url: https://mustsharenews.com
+country: sg
+language: en
+media_type: online
+influence_tier: major
+discovery:
+  strategy: rss
+  feed_url: "https://mustsharenews.com/feed/"
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT30M
+legal:
+  robots_checked: true
+maintainers: []

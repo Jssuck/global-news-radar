@@ -1,0 +1,16 @@
+name: El Tiempo
+base_url: https://www.eltiempo.com
+country: co
+language: es
+media_type: newspaper
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: "https://www.eltiempo.com/rss/colombia.xml"
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT10M
+legal:
+  robots_checked: true
+maintainers: []

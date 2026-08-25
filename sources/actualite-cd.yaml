@@ -1,0 +1,16 @@
+name: Actualite.cd
+base_url: https://actualite.cd
+country: cd
+language: fr
+media_type: online
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://actualite.cd/rss.xml
+geo:
+  status: unknown
+update_profile:
+  estimated_interval: PT33M
+legal:
+  robots_checked: true
+maintainers: []

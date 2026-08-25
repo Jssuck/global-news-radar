@@ -1,0 +1,17 @@
+name: SANA
+base_url: https://sana.sy
+country: sy
+language: en
+media_type: agency
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://sana.sy/feed/
+geo:
+  status: unknown
+update_profile:
+  estimated_interval: PT30M
+legal:
+  robots_checked: true
+  notes: 叙利亚媒体；叙利亚受美欧制裁（含凯撒法案）。聚合标题与链接本身未被禁止，标注供部署者合规决策。
+maintainers: []

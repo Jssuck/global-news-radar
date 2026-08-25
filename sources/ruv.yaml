@@ -1,0 +1,16 @@
+name: RÚV
+base_url: https://www.ruv.is
+country: is
+language: is
+media_type: tv
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://www.ruv.is/rss/frettir
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT10M
+legal:
+  robots_checked: true
+maintainers: []

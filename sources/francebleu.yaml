@@ -1,0 +1,16 @@
+name: France Bleu
+base_url: https://www.francebleu.fr
+country: fr
+language: fr
+media_type: radio
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://www.francebleu.fr/rss/a-la-une.xml
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT15M
+legal:
+  robots_checked: true
+maintainers: []

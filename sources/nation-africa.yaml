@@ -1,0 +1,16 @@
+name: Nation Africa
+base_url: https://nation.africa
+country: ke
+language: en
+media_type: newspaper
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://nation.africa/kenya/rss.xml
+geo:
+  status: unknown
+update_profile:
+  estimated_interval: PT30M
+legal:
+  robots_checked: true
+maintainers: []

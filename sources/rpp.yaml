@@ -1,0 +1,16 @@
+name: RPP Noticias
+base_url: https://rpp.pe
+country: pe
+language: es
+media_type: radio
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: "https://rpp.pe/feed"
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT10M
+legal:
+  robots_checked: true
+maintainers: []

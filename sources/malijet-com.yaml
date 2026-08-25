@@ -1,0 +1,16 @@
+name: Malijet
+base_url: https://malijet.com
+country: ml
+language: fr
+media_type: online
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://malijet.com/rss/
+geo:
+  status: unknown
+update_profile:
+  estimated_interval: PT30M
+legal:
+  robots_checked: true
+maintainers: []

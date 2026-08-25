@@ -1,0 +1,16 @@
+name: Telex
+base_url: https://telex.hu
+country: hu
+language: hu
+media_type: online
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://telex.hu/rss
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT15M
+legal:
+  robots_checked: true
+maintainers: []

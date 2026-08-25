@@ -1,0 +1,16 @@
+name: Capital Ethiopia
+base_url: https://capitalethiopia.com
+country: et
+language: en
+media_type: newspaper
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://capitalethiopia.com/feed/
+geo:
+  status: unknown
+update_profile:
+  estimated_interval: PT5H
+legal:
+  robots_checked: true
+maintainers: []

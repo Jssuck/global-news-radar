@@ -1,0 +1,16 @@
+name: "조선일보 (The Chosun Ilbo)"
+base_url: https://www.chosun.com
+country: kr
+language: ko
+media_type: newspaper
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: "https://www.chosun.com/arc/outboundfeeds/rss/?outputType=xml"
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT10M
+legal:
+  robots_checked: true
+maintainers: []

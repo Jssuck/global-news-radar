@@ -1,0 +1,16 @@
+name: ORF
+base_url: https://orf.at
+country: at
+language: de
+media_type: tv
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://rss.orf.at/news.xml
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT10M
+legal:
+  robots_checked: true
+maintainers: []

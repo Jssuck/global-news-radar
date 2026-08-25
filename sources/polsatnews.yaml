@@ -1,0 +1,16 @@
+name: Polsat News
+base_url: https://www.polsatnews.pl
+country: pl
+language: pl
+media_type: tv
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://www.polsatnews.pl/rss/wszystkie.xml
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT10M
+legal:
+  robots_checked: true
+maintainers: []

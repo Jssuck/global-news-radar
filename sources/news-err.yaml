@@ -1,0 +1,16 @@
+name: ERR
+base_url: https://news.err.ee
+country: ee
+language: et
+media_type: tv
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://err.ee/rss
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT10M
+legal:
+  robots_checked: true
+maintainers: []

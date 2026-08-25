@@ -1,0 +1,16 @@
+name: "MBN (Maeil Broadcasting Network)"
+base_url: https://www.mbn.co.kr
+country: kr
+language: ko
+media_type: tv
+influence_tier: major
+discovery:
+  strategy: rss
+  feed_url: "https://www.mbn.co.kr/rss/"
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT15M
+legal:
+  robots_checked: true
+maintainers: []

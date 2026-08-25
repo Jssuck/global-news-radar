@@ -1,0 +1,16 @@
+name: Iraqi News Agency
+base_url: https://ina.iq
+country: iq
+language: en
+media_type: agency
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://ina.iq/rssturbo.xml
+geo:
+  status: unknown
+update_profile:
+  estimated_interval: PT30M
+legal:
+  robots_checked: true
+maintainers: []

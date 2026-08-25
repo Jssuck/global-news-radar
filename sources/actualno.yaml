@@ -1,0 +1,16 @@
+name: Actualno
+base_url: https://www.actualno.com
+country: bg
+language: bg
+media_type: online
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://www.actualno.com/rss
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT15M
+legal:
+  robots_checked: true
+maintainers: []

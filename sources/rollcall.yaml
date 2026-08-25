@@ -1,0 +1,16 @@
+name: Roll Call
+base_url: https://rollcall.com
+country: us
+language: en
+media_type: newspaper
+influence_tier: major
+discovery:
+  strategy: rss
+  feed_url: "https://rollcall.com/feed/"
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT30M
+legal:
+  robots_checked: true
+maintainers: []

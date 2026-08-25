@@ -1,0 +1,16 @@
+name: Ethiopian Monitor
+base_url: https://ethiopianmonitor.com
+country: et
+language: en
+media_type: online
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://ethiopianmonitor.com/feed/
+geo:
+  status: unknown
+update_profile:
+  estimated_interval: PT12H
+legal:
+  robots_checked: true
+maintainers: []

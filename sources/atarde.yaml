@@ -1,0 +1,16 @@
+name: A Tarde
+base_url: https://www.atarde.com.br
+country: br
+language: pt-BR
+media_type: newspaper
+influence_tier: regional
+discovery:
+  strategy: rss
+  feed_url: "https://www.atarde.com.br/rss"
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT30M
+legal:
+  robots_checked: true
+maintainers: []

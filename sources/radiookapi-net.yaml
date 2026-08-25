@@ -1,0 +1,16 @@
+name: Radio Okapi
+base_url: https://www.radiookapi.net
+country: cd
+language: fr
+media_type: radio
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://www.radiookapi.net/feed
+geo:
+  status: unknown
+update_profile:
+  estimated_interval: PT30M
+legal:
+  robots_checked: true
+maintainers: []

@@ -1,0 +1,16 @@
+name: LeFaso.net
+base_url: https://lefaso.net
+country: bf
+language: fr
+media_type: online
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://lefaso.net/spip.php?page=backend
+geo:
+  status: unknown
+update_profile:
+  estimated_interval: PT5M
+legal:
+  robots_checked: true
+maintainers: []

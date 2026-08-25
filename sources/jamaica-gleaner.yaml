@@ -1,0 +1,16 @@
+name: Jamaica Gleaner
+base_url: https://jamaica-gleaner.com
+country: jm
+language: en
+media_type: newspaper
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: "https://jamaica-gleaner.com/feed/rss.xml"
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT30M
+legal:
+  robots_checked: true
+maintainers: []

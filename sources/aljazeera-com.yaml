@@ -1,0 +1,16 @@
+name: Al Jazeera
+base_url: https://www.aljazeera.com
+country: qa
+language: en
+media_type: tv
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://www.aljazeera.com/xml/rss/all.xml
+geo:
+  status: unknown
+update_profile:
+  estimated_interval: PT10M
+legal:
+  robots_checked: true
+maintainers: []

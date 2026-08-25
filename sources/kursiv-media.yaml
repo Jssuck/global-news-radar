@@ -1,0 +1,16 @@
+name: "Kursiv Media"
+base_url: https://kursiv.media
+country: kz
+language: ru
+media_type: online
+influence_tier: major
+discovery:
+  strategy: rss
+  feed_url: "https://kursiv.media/feed/"
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT30M
+legal:
+  robots_checked: true
+maintainers: []

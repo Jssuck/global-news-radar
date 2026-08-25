@@ -1,0 +1,16 @@
+name: New Era Namibia
+base_url: https://neweralive.na
+country: na
+language: en
+media_type: newspaper
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://neweralive.na/feed/
+geo:
+  status: unknown
+update_profile:
+  estimated_interval: PT30M
+legal:
+  robots_checked: true
+maintainers: []

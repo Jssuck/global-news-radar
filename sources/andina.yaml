@@ -1,0 +1,16 @@
+name: Agencia Andina
+base_url: https://andina.pe
+country: pe
+language: es
+media_type: agency
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: "https://andina.pe/agencia/rss.aspx"
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT15M
+legal:
+  robots_checked: true
+maintainers: []

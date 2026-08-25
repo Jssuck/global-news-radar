@@ -5,12 +5,14 @@ language: zh-CN
 media_type: newspaper
 influence_tier: national
 discovery:
-  strategy: rss
-  feed_url: http://www.people.com.cn/rss/politics.xml
+  strategy: html_list
+  list_url: http://www.people.com.cn
+  link_selector: 'a[href*="/n1/202"]'
 geo:
-  status: unknown
+  status: ok
 update_profile:
   estimated_interval: PT15M
 legal:
   robots_checked: true
+  notes: 官方 RSS（/rss/*.xml）仍可解析但内容冻结于 2025-06-05（官源停止更新），故降级为 html_list；首页含当日 n1/2026 文章链接，需黄金样本回归监控
 maintainers: []

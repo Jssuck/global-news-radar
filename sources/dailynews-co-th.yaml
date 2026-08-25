@@ -1,0 +1,17 @@
+name: "เดลินิวส์ (Daily News Thailand)"
+base_url: https://www.dailynews.co.th
+country: th
+language: th
+media_type: newspaper
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: "https://www.dailynews.co.th/feed/"
+geo:
+  status: unknown
+  evidence: "本环境间歇性返回空 feed(HTTP 200 但 0 条目，疑 CDN 对出口限流)；feed 为 WordPress 标准路径且曾验证含当日条目，待部署端复验"
+update_profile:
+  estimated_interval: PT15M
+legal:
+  robots_checked: true
+maintainers: []

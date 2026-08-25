@@ -1,0 +1,16 @@
+name: Complete Sports
+base_url: https://www.completesports.com
+country: ng
+language: en
+media_type: newspaper
+influence_tier: major
+discovery:
+  strategy: rss
+  feed_url: https://www.completesports.com/feed/
+geo:
+  status: unknown
+update_profile:
+  estimated_interval: PT30M
+legal:
+  robots_checked: true
+maintainers: []

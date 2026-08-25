@@ -1,0 +1,16 @@
+name: "आज तक (Aaj Tak)"
+base_url: https://www.aajtak.in
+country: in
+language: hi
+media_type: tv
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: "https://www.aajtak.in/rssfeeds/?id=home"
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT10M
+legal:
+  robots_checked: true
+maintainers: []

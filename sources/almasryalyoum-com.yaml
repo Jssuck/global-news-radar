@@ -1,0 +1,16 @@
+name: Al-Masry Al-Youm
+base_url: https://www.almasryalyoum.com
+country: eg
+language: ar
+media_type: newspaper
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://www.almasryalyoum.com/rss/rssfeeds
+geo:
+  status: unknown
+update_profile:
+  estimated_interval: PT22M
+legal:
+  robots_checked: true
+maintainers: []

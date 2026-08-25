@@ -1,0 +1,16 @@
+name: "Ikon.mn"
+base_url: https://ikon.mn
+country: mn
+language: mn
+media_type: online
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: "https://ikon.mn/rss"
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT15M
+legal:
+  robots_checked: true
+maintainers: []

@@ -1,0 +1,16 @@
+name: "7NEWS Australia"
+base_url: https://7news.com.au
+country: au
+language: en
+media_type: tv
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: "https://7news.com.au/feed"
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT15M
+legal:
+  robots_checked: true
+maintainers: []

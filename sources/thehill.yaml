@@ -1,0 +1,16 @@
+name: The Hill
+base_url: https://thehill.com
+country: us
+language: en
+media_type: newspaper
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: "https://thehill.com/feed/"
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT10M
+legal:
+  robots_checked: true
+maintainers: []

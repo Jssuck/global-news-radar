@@ -1,0 +1,16 @@
+name: Daily Monitor
+base_url: https://www.monitor.co.ug
+country: ug
+language: en
+media_type: newspaper
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://www.monitor.co.ug/rss.xml
+geo:
+  status: unknown
+update_profile:
+  estimated_interval: PT30M
+legal:
+  robots_checked: true
+maintainers: []

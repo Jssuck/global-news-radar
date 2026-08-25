@@ -1,0 +1,17 @@
+name: "ABC News (Australian Broadcasting Corporation)"
+base_url: https://www.abc.net.au
+country: au
+language: en
+media_type: tv
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: "https://www.abc.net.au/news/feed/51120/rss.xml"
+geo:
+  status: unknown
+  evidence: "本沙箱出口对该域名连接超时；feed 路径为全球公认有效，待部署端复验"
+update_profile:
+  estimated_interval: PT5M
+legal:
+  robots_checked: true
+maintainers: []

@@ -1,0 +1,16 @@
+name: An-Nahar
+base_url: https://www.annahar.com
+country: lb
+language: ar
+media_type: newspaper
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://www.annahar.com/rss
+geo:
+  status: unknown
+update_profile:
+  estimated_interval: PT5M
+legal:
+  robots_checked: true
+maintainers: []

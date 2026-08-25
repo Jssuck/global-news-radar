@@ -1,0 +1,16 @@
+name: "Berita Harian"
+base_url: https://www.bharian.com.my
+country: my
+language: ms
+media_type: newspaper
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: "https://www.bharian.com.my/feed"
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT15M
+legal:
+  robots_checked: true
+maintainers: []

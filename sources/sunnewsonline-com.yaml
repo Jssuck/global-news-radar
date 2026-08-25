@@ -1,0 +1,16 @@
+name: The Sun Nigeria
+base_url: https://sunnewsonline.com
+country: ng
+language: en
+media_type: newspaper
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://sunnewsonline.com/feed/
+geo:
+  status: unknown
+update_profile:
+  estimated_interval: PT30M
+legal:
+  robots_checked: true
+maintainers: []

@@ -1,0 +1,16 @@
+name: DELFI (LT)
+base_url: https://www.delfi.lt
+country: lt
+language: lt
+media_type: online
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://www.delfi.lt/rss/feeds/latest.xml
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT15M
+legal:
+  robots_checked: true
+maintainers: []

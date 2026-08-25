@@ -1,0 +1,17 @@
+name: The Irish Times
+base_url: https://www.irishtimes.com
+country: ie
+language: en
+media_type: newspaper
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://www.irishtimes.com/arc/outboundfeeds/rss/?outputType=xml
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT15M
+legal:
+  robots_checked: true
+  notes: 'paywall: 部分付费墙，RSS 免费可用'
+maintainers: []

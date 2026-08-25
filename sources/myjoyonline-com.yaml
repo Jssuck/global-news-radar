@@ -1,0 +1,16 @@
+name: MyJoyOnline
+base_url: https://www.myjoyonline.com
+country: gh
+language: en
+media_type: online
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://www.myjoyonline.com/feed/
+geo:
+  status: unknown
+update_profile:
+  estimated_interval: PT6M
+legal:
+  robots_checked: true
+maintainers: []

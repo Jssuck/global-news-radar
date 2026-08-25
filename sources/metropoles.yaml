@@ -1,0 +1,16 @@
+name: Metrópoles
+base_url: https://www.metropoles.com
+country: br
+language: pt-BR
+media_type: online
+influence_tier: major
+discovery:
+  strategy: rss
+  feed_url: "https://www.metropoles.com/feed"
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT10M
+legal:
+  robots_checked: true
+maintainers: []

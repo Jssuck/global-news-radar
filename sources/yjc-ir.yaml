@@ -1,0 +1,17 @@
+name: Young Journalists Club
+base_url: https://www.yjc.ir
+country: ir
+language: fa
+media_type: agency
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://www.yjc.ir/fa/rss/allnews
+geo:
+  status: unknown
+update_profile:
+  estimated_interval: PT30M
+legal:
+  robots_checked: true
+  notes: 伊朗媒体（多为国家/半官方背景）；伊朗受美欧全面制裁，部分国家媒体在制裁名单。聚合标题与链接本身未被禁止，标注供部署者合规决策。
+maintainers: []

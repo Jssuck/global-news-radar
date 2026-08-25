@@ -1,0 +1,16 @@
+name: Politiken
+base_url: https://politiken.dk
+country: dk
+language: da
+media_type: newspaper
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://politiken.dk/rss/senestenyt.rss
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT15M
+legal:
+  robots_checked: true
+maintainers: []

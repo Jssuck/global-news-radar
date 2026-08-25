@@ -8,7 +8,7 @@ discovery:
   strategy: rss
   feed_url: https://www.yna.co.kr/rss/news.xml
 geo:
-  status: unknown
+  status: ok
 update_profile:
   estimated_interval: PT10M
 legal:

@@ -1,0 +1,16 @@
+name: "Dân Trí"
+base_url: https://dantri.com.vn
+country: vn
+language: vi
+media_type: newspaper
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: "https://dantri.com.vn/rss/home.rss"
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT10M
+legal:
+  robots_checked: true
+maintainers: []

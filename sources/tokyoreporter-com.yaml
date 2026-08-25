@@ -1,0 +1,16 @@
+name: "The Tokyo Reporter"
+base_url: https://www.tokyoreporter.com
+country: jp
+language: en
+media_type: newspaper
+influence_tier: major
+discovery:
+  strategy: rss
+  feed_url: "https://www.tokyoreporter.com/feed/"
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT6H
+legal:
+  robots_checked: true
+maintainers: []

@@ -1,0 +1,16 @@
+name: APS Senegal
+base_url: https://aps.sn
+country: sn
+language: fr
+media_type: agency
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://aps.sn/rss.xml
+geo:
+  status: unknown
+update_profile:
+  estimated_interval: PT30M
+legal:
+  robots_checked: true
+maintainers: []

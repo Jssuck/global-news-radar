@@ -1,0 +1,17 @@
+name: "The Japan Times"
+base_url: https://www.japantimes.co.jp
+country: jp
+language: en
+media_type: newspaper
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: "https://www.japantimes.co.jp/feed/"
+geo:
+  status: unknown
+  evidence: "本沙箱出口对该域名连接超时；feed 路径为全球公认有效，待部署端复验"
+update_profile:
+  estimated_interval: PT15M
+legal:
+  robots_checked: true
+maintainers: []

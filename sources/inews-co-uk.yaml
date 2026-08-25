@@ -1,0 +1,16 @@
+name: i News (UK)
+base_url: https://inews.co.uk
+country: gb
+language: en
+media_type: newspaper
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://inews.co.uk/feed
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT15M
+legal:
+  robots_checked: true
+maintainers: []

@@ -1,0 +1,16 @@
+name: THISDAY
+base_url: https://www.thisdaylive.com
+country: ng
+language: en
+media_type: newspaper
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://www.thisdaylive.com/feed/
+geo:
+  status: unknown
+update_profile:
+  estimated_interval: PT2M
+legal:
+  robots_checked: true
+maintainers: []

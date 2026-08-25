@@ -1,0 +1,17 @@
+name: The Telegraph
+base_url: https://www.telegraph.co.uk
+country: gb
+language: en
+media_type: newspaper
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://www.telegraph.co.uk/rss.xml
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT15M
+legal:
+  robots_checked: true
+  notes: 'paywall: 部分文章付费，RSS 提供标题与摘要'
+maintainers: []

@@ -1,0 +1,16 @@
+name: New Business Ethiopia
+base_url: https://newbusinessethiopia.com
+country: et
+language: en
+media_type: online
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://newbusinessethiopia.com/feed/
+geo:
+  status: unknown
+update_profile:
+  estimated_interval: PT30M
+legal:
+  robots_checked: true
+maintainers: []

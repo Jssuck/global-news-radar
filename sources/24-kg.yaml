@@ -1,0 +1,16 @@
+name: "24.kg"
+base_url: https://24.kg
+country: kg
+language: ru
+media_type: agency
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: "https://24.kg/rss/"
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT15M
+legal:
+  robots_checked: true
+maintainers: []

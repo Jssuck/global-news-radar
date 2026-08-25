@@ -1,0 +1,16 @@
+name: "Yonhap News Agency (English)"
+base_url: https://en.yna.co.kr
+country: kr
+language: en
+media_type: agency
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: "https://en.yna.co.kr/RSS/news.xml"
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT10M
+legal:
+  robots_checked: true
+maintainers: []

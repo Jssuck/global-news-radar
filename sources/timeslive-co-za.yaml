@@ -1,0 +1,16 @@
+name: TimesLIVE
+base_url: https://www.timeslive.co.za
+country: za
+language: en
+media_type: newspaper
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://www.timeslive.co.za/arc/outboundfeeds/rss/?outputType=xml
+geo:
+  status: unknown
+update_profile:
+  estimated_interval: PT30M
+legal:
+  robots_checked: true
+maintainers: []

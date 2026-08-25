@@ -1,0 +1,16 @@
+name: BusinessDay
+base_url: https://businessday.ng
+country: ng
+language: en
+media_type: newspaper
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://businessday.ng/feed/
+geo:
+  status: unknown
+update_profile:
+  estimated_interval: PT2M
+legal:
+  robots_checked: true
+maintainers: []

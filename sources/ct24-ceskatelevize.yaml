@@ -1,0 +1,16 @@
+name: ČT24
+base_url: https://ct24.ceskatelevize.cz
+country: cz
+language: cs
+media_type: tv
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://ct24.ceskatelevize.cz/rss/tema/vyber-redakce-84313
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT10M
+legal:
+  robots_checked: true
+maintainers: []

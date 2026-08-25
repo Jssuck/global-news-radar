@@ -1,0 +1,16 @@
+name: Tribune Online
+base_url: https://tribuneonlineng.com
+country: ng
+language: en
+media_type: newspaper
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://tribuneonlineng.com/feed/
+geo:
+  status: unknown
+update_profile:
+  estimated_interval: PT30M
+legal:
+  robots_checked: true
+maintainers: []

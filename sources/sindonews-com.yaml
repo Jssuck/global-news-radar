@@ -1,0 +1,16 @@
+name: "SINDOnews"
+base_url: https://www.sindonews.com
+country: id
+language: id
+media_type: online
+influence_tier: major
+discovery:
+  strategy: rss
+  feed_url: "https://www.sindonews.com/rss"
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT10M
+legal:
+  robots_checked: true
+maintainers: []

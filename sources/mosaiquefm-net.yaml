@@ -1,0 +1,16 @@
+name: Mosaique FM
+base_url: https://www.mosaiquefm.net
+country: tn
+language: fr
+media_type: radio
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://www.mosaiquefm.net/fr/rss
+geo:
+  status: unknown
+update_profile:
+  estimated_interval: PT44M
+legal:
+  robots_checked: true
+maintainers: []

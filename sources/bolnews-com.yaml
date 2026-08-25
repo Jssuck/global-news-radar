@@ -1,0 +1,16 @@
+name: "BOL News"
+base_url: https://bolnews.com
+country: pk
+language: ur
+media_type: tv
+influence_tier: major
+discovery:
+  strategy: rss
+  feed_url: "https://bolnews.com/rss"
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT15M
+legal:
+  robots_checked: true
+maintainers: []

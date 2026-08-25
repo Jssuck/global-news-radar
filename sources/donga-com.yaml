@@ -1,0 +1,16 @@
+name: "동아일보 (The Dong-A Ilbo)"
+base_url: https://www.donga.com
+country: kr
+language: ko
+media_type: newspaper
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: "https://rss.donga.com/total.xml"
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT10M
+legal:
+  robots_checked: true
+maintainers: []

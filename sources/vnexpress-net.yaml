@@ -1,0 +1,16 @@
+name: "VnExpress"
+base_url: https://vnexpress.net
+country: vn
+language: vi
+media_type: online
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: "https://vnexpress.net/rss/tin-moi-nhat.rss"
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT10M
+legal:
+  robots_checked: true
+maintainers: []

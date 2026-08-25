@@ -1,0 +1,16 @@
+name: SA News Gov
+base_url: https://www.sanews.gov.za
+country: za
+language: en
+media_type: agency
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://www.sanews.gov.za/rss.xml
+geo:
+  status: unknown
+update_profile:
+  estimated_interval: PT30M
+legal:
+  robots_checked: true
+maintainers: []

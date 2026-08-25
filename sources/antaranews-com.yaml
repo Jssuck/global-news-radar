@@ -1,0 +1,16 @@
+name: "ANTARA (Perum LKBN Antara)"
+base_url: https://www.antaranews.com
+country: id
+language: id
+media_type: agency
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: "https://www.antaranews.com/rss/terkini.xml"
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT10M
+legal:
+  robots_checked: true
+maintainers: []

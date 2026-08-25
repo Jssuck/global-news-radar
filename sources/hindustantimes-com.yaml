@@ -1,0 +1,17 @@
+name: "Hindustan Times"
+base_url: https://www.hindustantimes.com
+country: in
+language: en
+media_type: newspaper
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: "https://www.hindustantimes.com/feeds/rss/india-news/rssfeed.xml"
+geo:
+  status: unknown
+  evidence: "本沙箱访问被 CDN 反爬拦截(HTTP 403/挑战页)；feed 路径为站点公开标准路径，待部署端复验"
+update_profile:
+  estimated_interval: PT10M
+legal:
+  robots_checked: true
+maintainers: []

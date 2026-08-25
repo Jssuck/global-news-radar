@@ -1,0 +1,16 @@
+name: Mako
+base_url: https://www.mako.co.il
+country: il
+language: he
+media_type: online
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://rcs.mako.co.il/rss/news-military.xml
+geo:
+  status: unknown
+update_profile:
+  estimated_interval: PT3H
+legal:
+  robots_checked: true
+maintainers: []

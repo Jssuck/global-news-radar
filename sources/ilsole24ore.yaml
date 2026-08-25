@@ -1,0 +1,16 @@
+name: Il Sole 24 Ore
+base_url: https://www.ilsole24ore.com
+country: it
+language: it
+media_type: newspaper
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://www.ilsole24ore.com/rss/italia.xml
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT15M
+legal:
+  robots_checked: true
+maintainers: []

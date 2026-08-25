@@ -1,0 +1,16 @@
+name: "Orda.kz"
+base_url: https://orda.kz
+country: kz
+language: ru
+media_type: online
+influence_tier: major
+discovery:
+  strategy: rss
+  feed_url: "https://orda.kz/feed/"
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT30M
+legal:
+  robots_checked: true
+maintainers: []

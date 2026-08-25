@@ -1,0 +1,16 @@
+name: La Prensa (Panamá)
+base_url: https://www.prensa.com
+country: pa
+language: es
+media_type: newspaper
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: "https://www.prensa.com/arc/outboundfeeds/rss/?outputType=xml"
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT15M
+legal:
+  robots_checked: true
+maintainers: []

@@ -1,0 +1,16 @@
+name: France 24 (FR)
+base_url: https://www.france24.com/fr/
+country: fr
+language: fr
+media_type: tv
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://www.france24.com/fr/rss
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT10M
+legal:
+  robots_checked: true
+maintainers: []

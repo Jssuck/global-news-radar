@@ -1,0 +1,16 @@
+name: Defense One
+base_url: https://www.defenseone.com
+country: us
+language: en
+media_type: online
+influence_tier: major
+discovery:
+  strategy: rss
+  feed_url: "https://www.defenseone.com/rss/all/"
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT30M
+legal:
+  robots_checked: true
+maintainers: []

@@ -1,0 +1,16 @@
+name: Libya Herald
+base_url: https://www.libyaherald.com
+country: ly
+language: en
+media_type: online
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://www.libyaherald.com/feed/
+geo:
+  status: unknown
+update_profile:
+  estimated_interval: PT33M
+legal:
+  robots_checked: true
+maintainers: []

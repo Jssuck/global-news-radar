@@ -1,0 +1,16 @@
+name: "MindaNews"
+base_url: https://mindanews.com
+country: ph
+language: en
+media_type: online
+influence_tier: regional
+discovery:
+  strategy: rss
+  feed_url: "https://mindanews.com/feed/"
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT1H
+legal:
+  robots_checked: true
+maintainers: []

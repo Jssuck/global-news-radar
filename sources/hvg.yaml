@@ -1,0 +1,16 @@
+name: HVG
+base_url: https://hvg.hu
+country: hu
+language: hu
+media_type: newspaper
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://hvg.hu/rss
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT15M
+legal:
+  robots_checked: true
+maintainers: []

@@ -1,0 +1,16 @@
+name: El Heraldo
+base_url: https://www.elheraldo.co
+country: co
+language: es
+media_type: newspaper
+influence_tier: major
+discovery:
+  strategy: rss
+  feed_url: "https://www.elheraldo.co/arc/outboundfeeds/rss/?outputType=xml"
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT15M
+legal:
+  robots_checked: true
+maintainers: []

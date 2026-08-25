@@ -1,0 +1,16 @@
+name: TSA Algerie
+base_url: https://www.tsa-algerie.com
+country: dz
+language: fr
+media_type: online
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://www.tsa-algerie.com/feed/
+geo:
+  status: unknown
+update_profile:
+  estimated_interval: PT1H
+legal:
+  robots_checked: true
+maintainers: []

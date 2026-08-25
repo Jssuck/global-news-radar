@@ -1,0 +1,16 @@
+name: The Oregonian (OregonLive)
+base_url: https://www.oregonlive.com
+country: us
+language: en
+media_type: newspaper
+influence_tier: major
+discovery:
+  strategy: rss
+  feed_url: "https://www.oregonlive.com/arc/outboundfeeds/rss/?outputType=xml"
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT15M
+legal:
+  robots_checked: true
+maintainers: []

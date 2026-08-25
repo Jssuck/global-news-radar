@@ -1,0 +1,16 @@
+name: Sky News
+base_url: https://news.sky.com
+country: gb
+language: en
+media_type: tv
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://feeds.skynews.com/feeds/rss/home.xml
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT10M
+legal:
+  robots_checked: true
+maintainers: []

@@ -1,0 +1,16 @@
+name: Interfax (RU)
+base_url: https://www.interfax.ru
+country: ru
+language: ru
+media_type: agency
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://www.interfax.ru/rss.asp
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT10M
+legal:
+  robots_checked: true
+maintainers: []

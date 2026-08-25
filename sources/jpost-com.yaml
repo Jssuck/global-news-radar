@@ -1,0 +1,16 @@
+name: The Jerusalem Post
+base_url: https://www.jpost.com
+country: il
+language: en
+media_type: newspaper
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://www.jpost.com/rss/rssfeedsfrontpage.aspx
+geo:
+  status: unknown
+update_profile:
+  estimated_interval: PT52M
+legal:
+  robots_checked: true
+maintainers: []

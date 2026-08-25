@@ -1,0 +1,16 @@
+name: Ynetnews
+base_url: https://www.ynetnews.com
+country: il
+language: en
+media_type: online
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://www.ynetnews.com/Integration/StoryRss2.xml
+geo:
+  status: unknown
+update_profile:
+  estimated_interval: PT4M
+legal:
+  robots_checked: true
+maintainers: []

@@ -5,12 +5,14 @@ language: en
 media_type: newspaper
 influence_tier: national
 discovery:
-  strategy: rss
-  feed_url: https://www.chinadaily.com.cn/rss/china_rss.xml
+  strategy: html_list
+  list_url: https://www.chinadaily.com.cn
+  link_selector: 'a[href*="/a/20"]'
 geo:
-  status: unknown
+  status: ok
 update_profile:
   estimated_interval: PT15M
 legal:
   robots_checked: true
+  notes: 官方 RSS（/rss/*_rss.xml）自 2017-12 停止更新、sitemap 最后 lastmod 为 2014，故降级为 html_list；首页含当日文章链接（形如 /a/202608/25/WS*.html），需黄金样本回归监控
 maintainers: []

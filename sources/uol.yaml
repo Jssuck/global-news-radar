@@ -1,0 +1,16 @@
+name: UOL Notícias
+base_url: https://noticias.uol.com.br
+country: br
+language: pt-BR
+media_type: online
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: "https://rss.uol.com.br/feed/noticias.xml"
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT10M
+legal:
+  robots_checked: true
+maintainers: []

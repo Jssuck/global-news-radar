@@ -1,0 +1,16 @@
+name: Diario La Hora
+base_url: https://lahora.gt
+country: gt
+language: es
+media_type: newspaper
+influence_tier: major
+discovery:
+  strategy: rss
+  feed_url: "https://lahora.gt/feed/"
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT30M
+legal:
+  robots_checked: true
+maintainers: []

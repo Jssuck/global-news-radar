@@ -1,0 +1,16 @@
+name: GroundUp
+base_url: https://groundup.org.za
+country: za
+language: en
+media_type: online
+influence_tier: regional
+discovery:
+  strategy: rss
+  feed_url: https://www.groundup.org.za/sitenews/rss/
+geo:
+  status: unknown
+update_profile:
+  estimated_interval: PT30M
+legal:
+  robots_checked: true
+maintainers: []

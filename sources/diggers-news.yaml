@@ -1,0 +1,16 @@
+name: News Diggers
+base_url: https://diggers.news
+country: zm
+language: en
+media_type: newspaper
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://diggers.news/feed/
+geo:
+  status: unknown
+update_profile:
+  estimated_interval: PT30M
+legal:
+  robots_checked: true
+maintainers: []

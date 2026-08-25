@@ -1,0 +1,16 @@
+name: E24
+base_url: https://e24.no
+country: 'no'
+language: 'no'
+media_type: newspaper
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://e24.no/rss2/?service=generisk
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT15M
+legal:
+  robots_checked: true
+maintainers: []

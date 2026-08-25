@@ -1,0 +1,16 @@
+name: Agência Brasil
+base_url: https://agenciabrasil.ebc.com.br
+country: br
+language: pt-BR
+media_type: agency
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: "https://agenciabrasil.ebc.com.br/rss/ultimasnoticias/feed.xml"
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT15M
+legal:
+  robots_checked: true
+maintainers: []

@@ -1,0 +1,16 @@
+name: Gazeta.pl Wiadomości
+base_url: https://wiadomosci.gazeta.pl
+country: pl
+language: pl
+media_type: newspaper
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://wiadomosci.gazeta.pl/pub/rss/wiadomosci.xml
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT15M
+legal:
+  robots_checked: true
+maintainers: []

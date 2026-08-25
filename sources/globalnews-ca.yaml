@@ -1,0 +1,16 @@
+name: Global News
+base_url: https://globalnews.ca
+country: ca
+language: en
+media_type: tv
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: "https://globalnews.ca/feed/"
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT10M
+legal:
+  robots_checked: true
+maintainers: []

@@ -1,0 +1,16 @@
+name: "Associated Press of Pakistan"
+base_url: https://www.app.com.pk
+country: pk
+language: en
+media_type: agency
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: "https://www.app.com.pk/feed/"
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT30M
+legal:
+  robots_checked: true
+maintainers: []

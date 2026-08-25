@@ -1,0 +1,16 @@
+name: Lusaka Times
+base_url: https://www.lusakatimes.com
+country: zm
+language: en
+media_type: online
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://www.lusakatimes.com/feed/
+geo:
+  status: unknown
+update_profile:
+  estimated_interval: PT6M
+legal:
+  robots_checked: true
+maintainers: []

@@ -1,0 +1,16 @@
+name: "CNN Indonesia"
+base_url: https://www.cnnindonesia.com
+country: id
+language: id
+media_type: tv
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: "https://www.cnnindonesia.com/rss"
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT10M
+legal:
+  robots_checked: true
+maintainers: []

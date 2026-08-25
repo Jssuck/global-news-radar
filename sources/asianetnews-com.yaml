@@ -1,0 +1,16 @@
+name: "Asianet News"
+base_url: https://www.asianetnews.com
+country: in
+language: ml
+media_type: tv
+influence_tier: major
+discovery:
+  strategy: rss
+  feed_url: "https://www.asianetnews.com/rss"
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT15M
+legal:
+  robots_checked: true
+maintainers: []

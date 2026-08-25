@@ -1,0 +1,16 @@
+name: Ajel
+base_url: https://ajel.sa
+country: sa
+language: ar
+media_type: online
+influence_tier: major
+discovery:
+  strategy: rss
+  feed_url: https://ajel.sa/rss
+geo:
+  status: unknown
+update_profile:
+  estimated_interval: PT30M
+legal:
+  robots_checked: true
+maintainers: []

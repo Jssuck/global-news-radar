@@ -1,0 +1,16 @@
+name: "The Astana Times"
+base_url: https://astanatimes.com
+country: kz
+language: en
+media_type: newspaper
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: "https://astanatimes.com/feed/"
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT1H
+legal:
+  robots_checked: true
+maintainers: []

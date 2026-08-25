@@ -1,0 +1,16 @@
+name: Deutschlandfunk
+base_url: https://www.deutschlandfunk.de
+country: de
+language: de
+media_type: radio
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://www.deutschlandfunk.de/nachrichten-100.rss
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT15M
+legal:
+  robots_checked: true
+maintainers: []

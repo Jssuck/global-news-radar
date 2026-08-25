@@ -1,0 +1,16 @@
+name: Al Marsad
+base_url: https://almarsad.co
+country: ly
+language: ar
+media_type: newspaper
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://almarsad.co/feed
+geo:
+  status: unknown
+update_profile:
+  estimated_interval: PT30M
+legal:
+  robots_checked: true
+maintainers: []

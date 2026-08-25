@@ -1,0 +1,16 @@
+name: Sveriges Radio Ekot
+base_url: https://sverigesradio.se
+country: se
+language: sv
+media_type: radio
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://api.sr.se/api/rss/program/83
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT15M
+legal:
+  robots_checked: true
+maintainers: []

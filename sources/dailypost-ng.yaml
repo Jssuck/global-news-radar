@@ -1,0 +1,16 @@
+name: Daily Post Nigeria
+base_url: https://dailypost.ng
+country: ng
+language: en
+media_type: online
+influence_tier: major
+discovery:
+  strategy: rss
+  feed_url: https://dailypost.ng/feed/
+geo:
+  status: unknown
+update_profile:
+  estimated_interval: PT5M
+legal:
+  robots_checked: true
+maintainers: []

@@ -1,0 +1,16 @@
+name: Blic (RS)
+base_url: https://www.blic.rs
+country: rs
+language: sr
+media_type: newspaper
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://www.blic.rs/rss/danasnje-vesti
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT15M
+legal:
+  robots_checked: true
+maintainers: []

@@ -1,0 +1,16 @@
+name: Al Watan Saudi
+base_url: https://www.alwatan.com.sa
+country: sa
+language: ar
+media_type: newspaper
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://www.alwatan.com.sa/feed/
+geo:
+  status: unknown
+update_profile:
+  estimated_interval: PT30M
+legal:
+  robots_checked: true
+maintainers: []

@@ -1,0 +1,16 @@
+name: Daily Guide Network
+base_url: https://dailyguidenetwork.com
+country: gh
+language: en
+media_type: newspaper
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://dailyguidenetwork.com/feed/
+geo:
+  status: unknown
+update_profile:
+  estimated_interval: PT3M
+legal:
+  robots_checked: true
+maintainers: []

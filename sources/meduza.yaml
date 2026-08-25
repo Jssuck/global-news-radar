@@ -1,0 +1,17 @@
+name: Meduza
+base_url: https://meduza.io
+country: lv
+language: ru
+media_type: online
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://meduza.io/rss/all
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT15M
+legal:
+  robots_checked: true
+  notes: 俄语独立媒体，编辑部位于里加（流亡）
+maintainers: []

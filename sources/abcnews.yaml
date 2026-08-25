@@ -1,0 +1,16 @@
+name: ABC News
+base_url: https://abcnews.go.com
+country: us
+language: en
+media_type: tv
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: "https://abcnews.go.com/abcnews/topstories"
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT10M
+legal:
+  robots_checked: true
+maintainers: []

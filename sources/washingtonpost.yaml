@@ -1,0 +1,17 @@
+name: The Washington Post
+base_url: https://www.washingtonpost.com
+country: us
+language: en
+media_type: newspaper
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: "https://feeds.washingtonpost.com/rss/world?itid=lk_inline_manual_40"
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT10M
+legal:
+  robots_checked: true
+  notes: paywall：正文需订阅，RSS 仅含免费开放栏目/标题摘要
+maintainers: []

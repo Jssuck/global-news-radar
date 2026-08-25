@@ -1,0 +1,16 @@
+name: Starr FM
+base_url: https://starrfm.com.gh
+country: gh
+language: en
+media_type: radio
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://starrfm.com.gh/feed/
+geo:
+  status: unknown
+update_profile:
+  estimated_interval: PT26M
+legal:
+  robots_checked: true
+maintainers: []

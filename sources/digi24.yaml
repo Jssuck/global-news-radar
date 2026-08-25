@@ -1,0 +1,16 @@
+name: Digi24
+base_url: https://www.digi24.ro
+country: ro
+language: ro
+media_type: tv
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://www.digi24.ro/rss
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT10M
+legal:
+  robots_checked: true
+maintainers: []

@@ -1,0 +1,16 @@
+name: "Nhân Dân (People's Newspaper, English)"
+base_url: https://en.nhandan.vn
+country: vn
+language: en
+media_type: newspaper
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: "https://en.nhandan.vn/rss/home.rss"
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT30M
+legal:
+  robots_checked: true
+maintainers: []

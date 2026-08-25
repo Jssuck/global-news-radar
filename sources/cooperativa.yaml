@@ -1,0 +1,16 @@
+name: Cooperativa
+base_url: https://www.cooperativa.cl
+country: cl
+language: es
+media_type: radio
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: "https://www.cooperativa.cl/noticias/site/tax/port/all/rss____1.xml"
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT10M
+legal:
+  robots_checked: true
+maintainers: []

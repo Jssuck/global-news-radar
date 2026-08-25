@@ -1,0 +1,16 @@
+name: The Filipino Times
+base_url: https://filipinotimes.net
+country: ae
+language: en
+media_type: newspaper
+influence_tier: regional
+discovery:
+  strategy: rss
+  feed_url: https://filipinotimes.net/feed/
+geo:
+  status: unknown
+update_profile:
+  estimated_interval: PT30M
+legal:
+  robots_checked: true
+maintainers: []

@@ -1,0 +1,16 @@
+name: Poder360
+base_url: https://www.poder360.com.br
+country: br
+language: pt-BR
+media_type: online
+influence_tier: major
+discovery:
+  strategy: rss
+  feed_url: "https://www.poder360.com.br/feed/"
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT15M
+legal:
+  robots_checked: true
+maintainers: []

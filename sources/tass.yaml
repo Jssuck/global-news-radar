@@ -1,0 +1,16 @@
+name: TASS
+base_url: https://tass.com
+country: ru
+language: ru
+media_type: agency
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://tass.ru/rss/v2.xml
+geo:
+  status: ok
+update_profile:
+  estimated_interval: PT10M
+legal:
+  robots_checked: true
+maintainers: []
