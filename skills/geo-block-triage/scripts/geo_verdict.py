@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """按 signal-rules 对疑似地域封锁信号计分并输出 verdict。
 
 用法:

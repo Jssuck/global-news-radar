@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """校验 Global News Radar 源定义文件（YAML/JSON）是否符合 source-schema。
 
 用法:
@@ -17,10 +16,12 @@ MEDIA_TYPES = {"agency", "newspaper", "tv", "radio", "online"}
 TIERS = {"national", "major", "regional"}
 STRATEGIES = {"rss", "sitemap", "html_list", "aggregator"}
 GEO_STATUS = {"ok", "geo_restricted", "unknown"}
+TRIAGE_VERDICTS = {"geo_restricted", "anti_bot", "blocked_legal", "inconclusive"}
 
 
 def load(path):
-    text = open(path, encoding="utf-8").read()
+    with open(path, encoding="utf-8") as f:
+        text = f.read()
     try:
         import yaml  # type: ignore
         return yaml.safe_load(text)
@@ -73,6 +74,20 @@ def check(doc):
 
     legal = doc.get("legal") or {}
     req(legal.get("robots_checked") is True, "legal.robots_checked 必须为 true（未检查 robots.txt 不得入库）")
+
+    active = doc.get("active", True)
+    req(isinstance(active, bool), "active 必须是布尔值（缺省视为 true）")
+    triage = doc.get("triage")
+    if triage is not None:
+        req(isinstance(triage, dict), "triage 必须是映射对象")
+        if isinstance(triage, dict):
+            req(triage.get("verdict") in TRIAGE_VERDICTS,
+                f"triage.verdict 必须是 {sorted(TRIAGE_VERDICTS)} 之一")
+            req(bool(triage.get("evidence")), "triage.evidence 必填（判定依据）")
+        if active:
+            warnings.append("存在 triage 结论但 active 仍为 true——确认是否应停用")
+    if not active and triage is None:
+        warnings.append("active: false 但缺少 triage 块——建议记录停用依据")
     return errors, warnings
 
 

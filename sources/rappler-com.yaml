@@ -1,4 +1,4 @@
-name: "Rappler"
+name: Rappler
 base_url: https://www.rappler.com
 country: ph
 language: en
@@ -6,7 +6,7 @@ media_type: online
 influence_tier: national
 discovery:
   strategy: rss
-  feed_url: "https://www.rappler.com/feed/"
+  feed_url: https://www.rappler.com/feed/
 geo:
   status: ok
 update_profile:
@@ -14,3 +14,9 @@ update_profile:
 legal:
   robots_checked: true
 maintainers: []
+active: false
+triage:
+  verdict: blocked_legal
+  evidence: 连续 2 轮 robots_blocked
+  date: '2026-08-25'
+  revisit: manual

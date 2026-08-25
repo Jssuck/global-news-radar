@@ -1,4 +1,4 @@
-name: "Global Times"
+name: Global Times
 base_url: https://www.globaltimes.cn
 country: cn
 language: en
@@ -6,7 +6,7 @@ media_type: newspaper
 influence_tier: national
 discovery:
   strategy: rss
-  feed_url: "https://www.globaltimes.cn/rss/outbrain.xml"
+  feed_url: https://www.globaltimes.cn/rss/outbrain.xml
 geo:
   status: ok
 update_profile:
@@ -14,3 +14,9 @@ update_profile:
 legal:
   robots_checked: true
 maintainers: []
+active: false
+triage:
+  verdict: anti_bot
+  evidence: 连续 2 轮 anti_bot
+  date: '2026-08-25'
+  revisit: M2

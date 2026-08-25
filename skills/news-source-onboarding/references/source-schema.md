@@ -23,6 +23,10 @@
 | `update_profile.estimated_interval` | string | 是 | 近 14 天估算更新间隔，ISO 8601 duration（如 `PT10M`） |
 | `legal.robots_checked` | bool | 是 | 必须 true 才可入库 |
 | `legal.notes` | string | 否 | ToS 特别条款备注 |
+| `active` | bool | 否 | 缺省 true；false 表示注册表保留但暂停抓取（须配 `triage` 块说明依据） |
+| `triage.verdict` | enum | 条件 | 停用时必填：`geo_restricted` / `anti_bot` / `blocked_legal` / `inconclusive`（与 geo-block-triage skill 一致） |
+| `triage.evidence` | string | 条件 | 停用时必填，判定依据（如「连续 2 轮 robots_blocked」） |
+| `triage.date` / `triage.revisit` | string | 否 | 分诊日期；恢复节点（如 `M2` / `manual`） |
 | `maintainers` | list | 否 | 源维护者 GitHub ID，社区共建责任到人 |
 
 ## 示例

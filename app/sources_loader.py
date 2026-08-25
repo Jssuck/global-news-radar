@@ -44,28 +44,31 @@ def load_seed_sources(db_path: str, sources_dir: Path) -> int:
                 str((doc.get("update_profile") or {}).get("estimated_interval", ""))
             )
             geo = doc.get("geo") or {}
+            # active 是注册表级决策（如 triage 停用），随 YAML 回写；默认 True
+            active = 1 if doc.get("active", True) else 0
             # 注意：ON CONFLICT 不回写 interval_minutes，保留自适应轮询的运行时值
             conn.execute(
                 """
                 INSERT INTO sources (source_key, name, base_url, country, language,
                                      media_type, influence_tier, feed_url,
                                      interval_minutes, geo_status,
-                                     discovery_strategy, sitemap_url)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                     discovery_strategy, sitemap_url, active)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(feed_url) DO UPDATE SET
                     name=excluded.name, base_url=excluded.base_url,
                     country=excluded.country, language=excluded.language,
                     media_type=excluded.media_type,
                     influence_tier=excluded.influence_tier,
                     discovery_strategy=excluded.discovery_strategy,
-                    sitemap_url=excluded.sitemap_url
+                    sitemap_url=excluded.sitemap_url,
+                    active=excluded.active
                 """,
                 (
                     path.stem, doc.get("name", path.stem), doc.get("base_url", ""),
                     doc.get("country", ""), doc.get("language", ""),
                     doc.get("media_type"), doc.get("influence_tier"),
                     endpoint, interval, geo.get("status", "unknown"),
-                    strategy, disc.get("sitemap_url"),
+                    strategy, disc.get("sitemap_url"), active,
                 ),
             )
             count += 1

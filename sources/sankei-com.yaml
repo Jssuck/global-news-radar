@@ -1,4 +1,4 @@
-name: "産経新聞 (Sankei Shimbun)"
+name: 産経新聞 (Sankei Shimbun)
 base_url: https://www.sankei.com
 country: jp
 language: ja
@@ -6,7 +6,7 @@ media_type: newspaper
 influence_tier: national
 discovery:
   strategy: rss
-  feed_url: "https://assets.wor.jp/rss/rdf/sankei/flash.rdf"
+  feed_url: https://assets.wor.jp/rss/rdf/sankei/flash.rdf
 geo:
   status: ok
 update_profile:
@@ -14,3 +14,9 @@ update_profile:
 legal:
   robots_checked: true
 maintainers: []
+active: false
+triage:
+  verdict: blocked_legal
+  evidence: 连续 2 轮 robots_blocked
+  date: '2026-08-25'
+  revisit: manual

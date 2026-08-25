@@ -6,7 +6,7 @@ media_type: newspaper
 influence_tier: national
 discovery:
   strategy: rss
-  feed_url: "https://feeds.content.dowjones.io/public/rss/mw_topstories"
+  feed_url: https://feeds.content.dowjones.io/public/rss/mw_topstories
 geo:
   status: ok
 update_profile:
@@ -15,3 +15,9 @@ legal:
   robots_checked: true
   notes: paywall：正文需订阅，RSS 仅含免费开放栏目/标题摘要
 maintainers: []
+active: false
+triage:
+  verdict: blocked_legal
+  evidence: 连续 2 轮 robots_blocked
+  date: '2026-08-25'
+  revisit: manual

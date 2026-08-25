@@ -1,4 +1,4 @@
-name: "Ada Derana"
+name: Ada Derana
 base_url: https://www.adaderana.lk
 country: lk
 language: en
@@ -6,7 +6,7 @@ media_type: tv
 influence_tier: national
 discovery:
   strategy: rss
-  feed_url: "https://www.adaderana.lk/rss.php"
+  feed_url: https://www.adaderana.lk/rss.php
 geo:
   status: ok
 update_profile:
@@ -14,3 +14,9 @@ update_profile:
 legal:
   robots_checked: true
 maintainers: []
+active: false
+triage:
+  verdict: anti_bot
+  evidence: 连续 2 轮 anti_bot
+  date: '2026-08-25'
+  revisit: M2

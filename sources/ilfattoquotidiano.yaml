@@ -14,3 +14,9 @@ update_profile:
 legal:
   robots_checked: true
 maintainers: []
+active: false
+triage:
+  verdict: blocked_legal
+  evidence: 连续 2 轮 robots_blocked
+  date: '2026-08-25'
+  revisit: manual

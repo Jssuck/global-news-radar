@@ -15,3 +15,9 @@ legal:
   robots_checked: true
   notes: banned in EU/UK by sanctions
 maintainers: []
+active: false
+triage:
+  verdict: anti_bot
+  evidence: 连续 2 轮 anti_bot
+  date: '2026-08-25'
+  revisit: M2

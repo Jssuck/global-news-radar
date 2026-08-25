@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """对照验收标准核对实测指标，输出逐项 PASS/FAIL 与总体结论。
 
 用法:
@@ -25,8 +24,10 @@ def main():
     args = ap.parse_args()
 
     try:
-        metrics = json.load(open(args.metrics, encoding="utf-8"))
-        criteria = json.load(open(args.criteria, encoding="utf-8"))
+        with open(args.metrics, encoding="utf-8") as f:
+            metrics = json.load(f)
+        with open(args.criteria, encoding="utf-8") as f:
+            criteria = json.load(f)
     except (OSError, json.JSONDecodeError) as exc:
         print(f"INPUT_ERROR: {exc}", file=sys.stderr)
         sys.exit(2)

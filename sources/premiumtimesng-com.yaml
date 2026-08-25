@@ -14,3 +14,9 @@ update_profile:
 legal:
   robots_checked: true
 maintainers: []
+active: false
+triage:
+  verdict: anti_bot
+  evidence: 连续 2 轮 anti_bot
+  date: '2026-08-25'
+  revisit: M2
