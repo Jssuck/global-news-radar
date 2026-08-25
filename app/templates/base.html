@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Global News Radar{% endblock %}</title>
+  <style>
+    body { font-family: -apple-system, "Segoe UI", "PingFang SC", sans-serif;
+           margin: 0; background: #f6f7f9; color: #222; }
+    header { background: #1a3a5c; color: #fff; padding: 12px 24px;
+             display: flex; gap: 20px; align-items: baseline; }
+    header a { color: #cfe3f5; text-decoration: none; }
+    header .brand { font-weight: 700; font-size: 18px; color: #fff; }
+    main { max-width: 960px; margin: 24px auto; padding: 0 16px; }
+    .card { background: #fff; border: 1px solid #e3e6ea; border-radius: 8px;
+            padding: 14px 18px; margin-bottom: 12px; }
+    .muted { color: #777; font-size: 13px; }
+    table { width: 100%; border-collapse: collapse; background: #fff; }
+    th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid #eee;
+             font-size: 14px; vertical-align: top; }
+    .badge { display: inline-block; padding: 1px 8px; border-radius: 10px;
+             font-size: 12px; }
+    .ok { background: #e2f4e5; color: #217a35; }
+    .geo_restricted { background: #fde8e8; color: #b42318; }
+    .unknown { background: #eef0f2; color: #666; }
+    .hint-box { background: #fff7ed; border: 1px solid #fed7aa;
+                border-radius: 8px; padding: 10px 14px; margin: 8px 0;
+                font-size: 14px; }
+    code { background: #f0f1f3; padding: 1px 5px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+<header>
+  <span class="brand">Global News Radar</span>
+  <a href="/">新闻流</a>
+  <a href="/sources">源看板</a>
+  <a href="/docs">API 文档</a>
+</header>
+<main>
+{% block content %}{% endblock %}
+</main>
+</body>
+</html>

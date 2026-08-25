@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}新闻流 · Global News Radar{% endblock %}
+{% block content %}
+<h1>最新新闻</h1>
+<p class="muted">监控 {{ stats.sources }} 个媒体源 · 已收录 {{ stats.articles }} 篇文章
+   · 仅展示标题与短摘要，全文请访问原文链接</p>
+{% if not articles %}
+<div class="card">暂无文章。启动后系统会按源间隔自动抓取，也可在
+  <a href="/docs">API 文档</a> 中调用 <code>POST /api/v1/sources/{id}/check</code>
+  手动触发一次抓取。</div>
+{% endif %}
+{% for a in articles %}
+<div class="card">
+  <div>
+    <a href="{{ a.url }}" target="_blank" rel="noopener noreferrer">{{ a.title }}</a>
+  </div>
+  <div class="muted">
+    {{ a.source_name }} · {{ a.country|upper }} · {{ a.language }} ·
+    {{ a.published_at or a.fetched_at }}
+  </div>
+  {% if a.summary %}<p>{{ a.summary[:200] }}</p>{% endif %}
+</div>
+{% endfor %}
+{% endblock %}
