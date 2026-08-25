@@ -1,0 +1,16 @@
+name: Le Monde
+base_url: https://www.lemonde.fr
+country: fr
+language: fr
+media_type: newspaper
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://www.lemonde.fr/rss/une.xml
+geo:
+  status: unknown
+update_profile:
+  estimated_interval: PT10M
+legal:
+  robots_checked: true
+maintainers: []

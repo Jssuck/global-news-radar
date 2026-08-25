@@ -1,0 +1,16 @@
+name: 연합뉴스 (Yonhap News Agency)
+base_url: https://www.yna.co.kr
+country: kr
+language: ko
+media_type: agency
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://www.yna.co.kr/rss/news.xml
+geo:
+  status: unknown
+update_profile:
+  estimated_interval: PT10M
+legal:
+  robots_checked: true
+maintainers: []

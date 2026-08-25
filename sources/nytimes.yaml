@@ -1,0 +1,16 @@
+name: The New York Times
+base_url: https://www.nytimes.com
+country: us
+language: en
+media_type: newspaper
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://rss.nytimes.com/services/xml/rss/nyt/World.xml
+geo:
+  status: unknown
+update_profile:
+  estimated_interval: PT10M
+legal:
+  robots_checked: true
+maintainers: []

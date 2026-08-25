@@ -1,0 +1,16 @@
+name: Deutsche Welle (Deutsch)
+base_url: https://www.dw.com/de/
+country: de
+language: de
+media_type: tv
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://rss.dw.com/xml/rss-de-all
+geo:
+  status: unknown
+update_profile:
+  estimated_interval: PT10M
+legal:
+  robots_checked: true
+maintainers: []

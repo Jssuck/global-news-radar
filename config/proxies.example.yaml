@@ -1,0 +1,32 @@
+# 地域代理配置示例（BYO Proxy：项目不分发、不内置任何代理资源）
+# MVP 仅读取并展示本配置，不做真实代理转发；绑定解析优先级：源级 > 国家级 > 全局
+# 凭据请使用环境变量引用（credentials_env），不要把明文密钥提交进仓库
+profiles:
+  - profile_id: us-residential-1
+    type: residential          # datacenter | residential | isp | mobile
+    country: us                # 出口地域（ISO 3166-1 alpha-2）
+    endpoint: http://proxy.example.com:7000
+    credentials_env: GNR_PROXY_US_CRED   # 指向本地环境变量，不落明文
+    provider: 自建/任意供应商
+    notes: 美国住宅出口，用于仅允许美国 IP 的媒体
+  - profile_id: jp-datacenter-1
+    type: datacenter
+    country: jp
+    endpoint: http://proxy.example.com:7100
+    credentials_env: GNR_PROXY_JP_CRED
+    provider: 自建
+    notes: 日本数据中心出口（默认优先数据中心，证实受限后再升级住宅）
+
+bindings:
+  # scope: source | country | global；同级冲突取 priority 较小者
+  - scope: source
+    source: nhk-world           # 对应 sources/*.yaml 的文件名（source key）
+    profile_id: jp-datacenter-1
+    priority: 10
+  - scope: country
+    country: us
+    profile_id: us-residential-1
+    priority: 20
+  - scope: global
+    profile_id: jp-datacenter-1
+    priority: 100

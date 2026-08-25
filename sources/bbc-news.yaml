@@ -1,0 +1,16 @@
+name: BBC News
+base_url: https://www.bbc.com
+country: gb
+language: en
+media_type: tv
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://feeds.bbci.co.uk/news/rss.xml
+geo:
+  status: unknown
+update_profile:
+  estimated_interval: PT5M
+legal:
+  robots_checked: true
+maintainers: []

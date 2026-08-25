@@ -1,0 +1,16 @@
+name: DW (English)
+base_url: https://www.dw.com/en/
+country: de
+language: en
+media_type: tv
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://rss.dw.com/xml/rss-en-all
+geo:
+  status: unknown
+update_profile:
+  estimated_interval: PT10M
+legal:
+  robots_checked: true
+maintainers: []

@@ -1,0 +1,16 @@
+name: 人民网
+base_url: http://www.people.com.cn
+country: cn
+language: zh-CN
+media_type: newspaper
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: http://www.people.com.cn/rss/politics.xml
+geo:
+  status: unknown
+update_profile:
+  estimated_interval: PT15M
+legal:
+  robots_checked: true
+maintainers: []

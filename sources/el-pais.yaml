@@ -1,0 +1,16 @@
+name: El País
+base_url: https://elpais.com
+country: es
+language: es
+media_type: newspaper
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/portada
+geo:
+  status: unknown
+update_profile:
+  estimated_interval: PT10M
+legal:
+  robots_checked: true
+maintainers: []

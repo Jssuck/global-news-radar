@@ -1,0 +1,16 @@
+name: The Hindu
+base_url: https://www.thehindu.com
+country: in
+language: en
+media_type: newspaper
+influence_tier: national
+discovery:
+  strategy: rss
+  feed_url: https://www.thehindu.com/news/national/feeder/default.rss
+geo:
+  status: unknown
+update_profile:
+  estimated_interval: PT10M
+legal:
+  robots_checked: true
+maintainers: []
