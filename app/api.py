@@ -313,6 +313,202 @@ def delete_proxy_binding(request: Request, binding_id: int):
     return {"deleted": binding_id}
 
 
+@router.get("/sources/{source_id}")
+def get_source(request: Request, source_id: int):
+    """源详情：含最近一次抓取日志与绑定代理。"""
+    with connect(request.app.state.settings.db_path) as conn:
+        row = conn.execute("SELECT * FROM sources WHERE id=?",
+                           (source_id,)).fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="源不存在")
+        logs = conn.execute(
+            "SELECT fetched_at, http_status, result, new_articles, proxy_key,"
+            " detail FROM fetch_log WHERE source_id=? ORDER BY id DESC LIMIT 5",
+            (source_id,)).fetchall()
+        bound = conn.execute(
+            """
+            SELECT p.profile_key, p.country, p.endpoint FROM proxy_bindings b
+            JOIN proxy_profiles p ON p.id = b.proxy_profile_id
+            WHERE b.scope = 'source' AND b.source_id = ?
+            ORDER BY b.priority LIMIT 1
+            """, (source_id,)).fetchone()
+    src = _source_dict(row)
+    src["recent_fetch_log"] = [dict(r) for r in logs]
+    src["bound_proxy"] = dict(bound) if bound else None
+    return src
+
+
+class SourceIn(BaseModel):
+    name: str = Field(min_length=1, max_length=200)
+    base_url: str = Field(min_length=4)
+    country: str = Field(min_length=2, max_length=2)
+    language: str = Field(min_length=2, max_length=10)
+    feed_url: str = Field(min_length=4)
+    discovery_strategy: str = Field(default="rss",
+                                    pattern="^(rss|sitemap)$")
+    sitemap_url: str | None = None
+    media_type: str | None = None
+    influence_tier: str | None = None
+
+
+@router.post("/sources", status_code=201)
+def add_source(request: Request, payload: SourceIn):
+    """新增源（editor）：先经 schema 校验入库，verify_feed 复测后再转 active。"""
+    guard(request, "source:manage")
+    from .sources_loader import parse_interval_minutes  # noqa: F401
+    source_key = (payload.base_url.split("://")[-1].split("/")[0]
+                  .replace("www.", "").replace(".", "-"))
+    with WRITE_LOCK, connect(request.app.state.settings.db_path) as conn:
+        dup = conn.execute("SELECT 1 FROM sources WHERE feed_url=?",
+                           (payload.feed_url,)).fetchone()
+        if dup:
+            raise HTTPException(status_code=409, detail="feed_url 已存在")
+        cur = conn.execute(
+            """
+            INSERT INTO sources (source_key, name, base_url, country, language,
+                                 media_type, influence_tier, feed_url,
+                                 discovery_strategy, sitemap_url, geo_status,
+                                 active)
+            VALUES (?,?,?,?,?,?,?,?,?,?,'unknown',0)
+            """,
+            (source_key, payload.name, payload.base_url, payload.country,
+             payload.language, payload.media_type, payload.influence_tier,
+             payload.feed_url, payload.discovery_strategy, payload.sitemap_url),
+        )
+        row = conn.execute("SELECT * FROM sources WHERE id=?",
+                           (cur.lastrowid,)).fetchone()
+    return _source_dict(row)
+
+
+class SourcePatch(BaseModel):
+    active: bool | None = None
+    interval_minutes: int | None = Field(default=None, ge=5, le=1440)
+    feed_url: str | None = None
+
+
+@router.patch("/sources/{source_id}")
+def patch_source(request: Request, source_id: int, payload: SourcePatch):
+    """源启停/间隔/feed 修正（editor）。"""
+    guard(request, "source:manage")
+    sets, params = [], []
+    if payload.active is not None:
+        sets.append("active=?")
+        params.append(int(payload.active))
+    if payload.interval_minutes is not None:
+        sets.append("interval_minutes=?")
+        params.append(payload.interval_minutes)
+    if payload.feed_url:
+        sets.append("feed_url=?")
+        params.append(payload.feed_url)
+    if not sets:
+        raise HTTPException(status_code=422, detail="无可更新字段")
+    params.append(source_id)
+    with WRITE_LOCK, connect(request.app.state.settings.db_path) as conn:
+        cur = conn.execute(
+            f"UPDATE sources SET {', '.join(sets)} WHERE id=?", params)
+        if cur.rowcount == 0:
+            raise HTTPException(status_code=404, detail="源不存在")
+    return {"id": source_id, "updated": [s.split("=")[0] for s in sets]}
+
+
+# ---- 事件 / 死信 / 健康 ----
+
+
+@router.get("/events")
+def list_events(request: Request,
+                page: int = Query(1, ge=1),
+                size: int = Query(20, ge=1, le=100),
+                organized: int | None = None):
+    """事件簇列表（含未整理占位）。"""
+    where = "WHERE organized=?" if organized is not None else ""
+    params = [organized] if organized is not None else []
+    with connect(request.app.state.settings.db_path) as conn:
+        total = conn.execute(f"SELECT COUNT(*) FROM events {where}",
+                             params).fetchone()[0]
+        rows = conn.execute(
+            f"SELECT * FROM events {where} ORDER BY last_updated DESC"
+            " LIMIT ? OFFSET ?",
+            [*params, size, (page - 1) * size]).fetchall()
+    return {"total": total, "page": page, "size": size,
+            "items": [dict(r) for r in rows]}
+
+
+@router.get("/events/{event_id}")
+def get_event(request: Request, event_id: int):
+    """事件详情 + 成员文章（标题+摘要+链接，不含全文）。"""
+    with connect(request.app.state.settings.db_path) as conn:
+        ev = conn.execute("SELECT * FROM events WHERE id=?",
+                          (event_id,)).fetchone()
+        if not ev:
+            raise HTTPException(status_code=404, detail="事件不存在")
+        members = conn.execute(
+            """
+            SELECT a.id, a.title, a.summary, a.url, a.language,
+                   a.published_at, s.name AS source_name, s.country
+            FROM articles a JOIN sources s ON s.id = a.source_id
+            WHERE a.event_id=? ORDER BY a.published_at DESC
+            """, (event_id,)).fetchall()
+    item = dict(ev)
+    item["members"] = [dict(m) for m in members]
+    return item
+
+
+@router.get("/dead-letters")
+def list_dead_letters(request: Request, status: str = "open",
+                      stage: str | None = None):
+    """死信队列（editor）：清洗/整理失败的输入快照与错误。"""
+    guard(request, "read")
+    where, params = ["status=?"], [status]
+    if stage:
+        where.append("stage=?")
+        params.append(stage)
+    with connect(request.app.state.settings.db_path) as conn:
+        rows = conn.execute(
+            f"SELECT * FROM dead_letters WHERE {' AND '.join(where)}"
+            " ORDER BY id DESC LIMIT 100", params).fetchall()
+    return {"total": len(rows), "items": [dict(r) for r in rows]}
+
+
+@router.post("/dead-letters/{dlq_id}/resolve")
+def resolve_dead_letter(request: Request, dlq_id: int):
+    guard(request, "write")
+    with WRITE_LOCK, connect(request.app.state.settings.db_path) as conn:
+        cur = conn.execute(
+            "UPDATE dead_letters SET status='resolved' WHERE id=?", (dlq_id,))
+        if cur.rowcount == 0:
+            raise HTTPException(status_code=404, detail="死信不存在")
+    return {"id": dlq_id, "status": "resolved"}
+
+
+@router.get("/health")
+def health(request: Request):
+    """健康度：DB 可写、最近抓取时间、活跃源、LLM/embedder 配置状态。"""
+    settings = request.app.state.settings
+    with connect(settings.db_path) as conn:
+        conn.execute("SELECT 1").fetchone()
+        last_fetch = conn.execute(
+            "SELECT MAX(fetched_at) FROM fetch_log").fetchone()[0]
+        active = conn.execute(
+            "SELECT COUNT(*) FROM sources WHERE active=1").fetchone()[0]
+        open_hints = conn.execute(
+            "SELECT COUNT(*) FROM geo_hints WHERE status IN ('open','suspected')"
+        ).fetchone()[0]
+        dlq_open = conn.execute(
+            "SELECT COUNT(*) FROM dead_letters WHERE status='open'"
+        ).fetchone()[0]
+    return {
+        "status": "ok",
+        "db": "ok",
+        "last_fetch_at": last_fetch,
+        "sources_active": active,
+        "geo_hints_open": open_hints,
+        "dead_letters_open": dlq_open,
+        "llm_configured": bool(settings.llm_base_url),
+        "embedder_configured": bool(settings.embed_base_url),
+        "render_enabled": settings.render_enabled,
+    }
+
+
 @router.get("/stats")
 def stats(request: Request):
     """概览统计：源数 / 文章数 / 受限源数 / 最近抓取时间 + M1 管线指标。"""
@@ -521,3 +717,75 @@ def require_user_or_401(request: Request) -> Principal:
     if not p:
         raise HTTPException(status_code=401, detail="未认证")
     return p
+
+
+# ---- SSE 事件流（设计 5.4：实时推送抓取/受限/事件动态） ----
+
+
+async def sse_frames(db_path: str, *, is_disconnected=None,
+                     poll_seconds: float = 2.0):
+    """SSE 帧生成器：轮询 fetch_log/geo_hints/events 新增行。
+
+    is_disconnected 可注入（测试用有界停止）；生产走 request.is_disconnected。
+    """
+    import asyncio
+    import json as _json
+
+    last_fetch_id = last_hint_id = last_event_id = 0
+    while True:
+        if is_disconnected and is_disconnected():
+            return
+        try:
+            with connect(db_path) as conn:
+                fetches = conn.execute(
+                    """
+                    SELECT f.id, s.name AS source, f.result,
+                           f.new_articles, f.fetched_at
+                    FROM fetch_log f JOIN sources s ON s.id=f.source_id
+                    WHERE f.id > ? ORDER BY f.id LIMIT 50
+                    """, (last_fetch_id,)).fetchall()
+                hints = conn.execute(
+                    """
+                    SELECT h.id, s.name AS source, h.status,
+                           h.required_region, h.created_at
+                    FROM geo_hints h JOIN sources s ON s.id=h.source_id
+                    WHERE h.id > ? ORDER BY h.id LIMIT 20
+                    """, (last_hint_id,)).fetchall()
+                events = conn.execute(
+                    "SELECT id, title, article_count, organized,"
+                    " last_updated FROM events WHERE id > ?"
+                    " ORDER BY id LIMIT 20", (last_event_id,)).fetchall()
+            for r in fetches:
+                last_fetch_id = max(last_fetch_id, r["id"])
+                yield f"event: fetch\ndata: {_json.dumps(dict(r), ensure_ascii=False)}\n\n"
+            for r in hints:
+                last_hint_id = max(last_hint_id, r["id"])
+                yield f"event: geo_hint\ndata: {_json.dumps(dict(r), ensure_ascii=False)}\n\n"
+            for r in events:
+                last_event_id = max(last_event_id, r["id"])
+                yield f"event: event\ndata: {_json.dumps(dict(r), ensure_ascii=False)}\n\n"
+        except Exception:  # 流内异常降级为心跳重试
+            import logging
+            logging.getLogger("gnr.sse").debug("sse poll failed",
+                                               exc_info=True)
+        yield ": ping\n\n"
+        await asyncio.sleep(poll_seconds)
+
+
+@router.get("/stream")
+async def event_stream(request: Request):
+    """SSE：抓取/受限提示/事件动态推送（心跳每轮，轮询 2s）。
+
+    MVP 实现为进程内 DB 轮询；分布式部署时替换为 Celery/Redis 广播。
+    """
+    from fastapi.responses import StreamingResponse
+
+    def _check():
+        # StreamingResponse 断连时自动取消生成器，此处无需额外判停
+        return False
+
+    return StreamingResponse(
+        sse_frames(request.app.state.settings.db_path,
+                   is_disconnected=_check, poll_seconds=2.0),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
