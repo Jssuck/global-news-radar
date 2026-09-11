@@ -58,7 +58,9 @@ Global News Radar 锁定全球各国主流媒体——通讯社、全国性大�
 
 ## 项目状态
 
-**孵化期（M1 已完成，M2 进行中）**。v1.0 设计已定稿，抓取内核已在 `main`：443 个种子源（60+ 国、40+ 语种）、RSS→sitemap 发现降级、robots.txt 合规、per-host 礼貌限速、自适应轮询、trafilatura 抽取兜底链——门禁结论见 [M1 门禁报告](docs/harness/gate-reports/m1-gate-report.md)（PASS）。最小可运行原型见 [`mvp` 分支](https://github.com/Jssuck/global-news-radar/tree/mvp)。
+**孵化期（M1 已完成，M2/M3 功能已落地，门禁待测）**。v1.0 设计已定稿，抓取内核已在 `main`：443 个种子源（60+ 国、40+ 语种）、RSS→sitemap 发现降级、robots.txt 合规、per-host 礼貌限速、自适应轮询、trafilatura 抽取兜底链——门禁结论见 [M1 门禁报告](docs/harness/gate-reports/m1-gate-report.md)（PASS）。
+
+v0.1.0 之后单进程应用已新增：三级代理绑定（源>国>全局）注入抓取路径、geo 中信号+他国出口对照确认、受限源 GDELT 聚合层降级、可插拔 LLM 清洗（schema 闸门+确定性检查+DLQ+成本记录）、两遍 KNN+UnionFind 事件聚类与 LLM 事件整理、Playwright 渲染兜底（日预算限制）、session/API-key 认证与注册审核三态、RBAC 与限流、35 个 REST 端点（含 SSE 事件流）以及三个服务端渲染界面。M2/M3 正式门禁测量待执行。
 
 ### 路线图
 
@@ -66,8 +68,8 @@ Global News Radar 锁定全球各国主流媒体——通讯社、全国性大�
 |---|---|---|
 | M0 筹备 | 仓库、治理、CI、harness 文档 | —（已完成） |
 | M1 抓取内核 | 种子源库、调度、RSS/sitemap 抓取、规则清洗 | ✅ 已完成——440 源入库，抽取成功率 95.8% |
-| M2 地域与 LLM 管线 | 地域受限检测+代理提示、LLM 清洗与整理 | 黄金集判定准确率 ≥90% |
-| M3 全栈应用 | 看板、认证审核、REST API v1 | 27 个端点上线 |
+| M2 地域与 LLM 管线 | 地域受限检测+代理提示、LLM 清洗与整理 | 🚧 已实现——黄金集准确率与 72h 指标待测 |
+| M3 全栈应用 | 看板、认证审核、REST API v1 | 🚧 35 个端点已上线（含 SSE）；契约测试待补 |
 | M4 加固与发布 | 可观测性、文档、发布 | 打 v1.0.0 tag |
 
 验收标准与门禁评审按 [docs/harness/](docs/harness/) 强制执行。

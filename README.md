@@ -58,7 +58,9 @@ Full design: [docs/design/design-v1.0.md](docs/design/design-v1.0.md)
 
 ## Project Status
 
-**Incubating — M1 done, M2 in progress.** The v1.0 design is finalized and the crawling core is on `main`: 443 seed sources (60+ countries, 40+ languages), RSS→sitemap discovery cascade, robots.txt compliance, per-host politeness, adaptive polling, and the trafilatura fallback chain — see the [M1 gate report](docs/harness/gate-reports/m1-gate-report.md) (PASS). A minimal end-to-end prototype also lives on the [`mvp` branch](https://github.com/Jssuck/global-news-radar/tree/mvp).
+**Incubating — M1 done, M2/M3 features landed, gates pending.** The v1.0 design is finalized and the crawling core is on `main`: 443 seed sources (60+ countries, 40+ languages), RSS→sitemap discovery cascade, robots.txt compliance, per-host politeness, adaptive polling, and the trafilatura fallback chain — see the [M1 gate report](docs/harness/gate-reports/m1-gate-report.md) (PASS).
+
+Since v0.1.0 the single-process app has gained: three-level proxy bindings (source > country > global) injected into the fetch path, geo medium signals (redirect-page / body-truncation) with alt-country egress contrast confirmation, GDELT aggregate degraded mode for confirmed geo-restricted sources, a pluggable LLM cleaning stage (OpenAI-compatible provider, CleanedArticle schema gate + deterministic grounding checks, one-shot retry → DLQ, per-call token accounting), two-pass KNN+UnionFind event clustering with an organized-event LLM stage, an optional Playwright render fallback for anti-bot sources under a daily budget, session/API-key auth with a pending→approved|rejected registration state machine, role-based access (admin/editor/viewer), token-bucket rate limiting, 35 REST endpoints including an SSE event stream, and three server-rendered UIs (news feed, source board, admin console). Formal M2/M3 gate measurement is still pending.
 
 ### Roadmap
 
@@ -66,8 +68,8 @@ Full design: [docs/design/design-v1.0.md](docs/design/design-v1.0.md)
 |---|---|---|
 | M0 Bootstrap | repo, governance, CI, harness docs | — (done) |
 | M1 Crawling Core | seed registry, scheduler, RSS/sitemap fetching, rule cleaning | ✅ done — 440 sources onboarded, extraction success 95.8% |
-| M2 Geo & LLM Pipeline | geo-block detection + proxy hints, LLM cleaning & organization | geo verdict accuracy ≥90% on golden set |
-| M3 Full-stack App | dashboard, auth + approval, REST API v1 | 27 endpoints live |
+| M2 Geo & LLM Pipeline | geo-block detection + proxy hints, LLM cleaning & organization | 🚧 implemented — golden-set geo accuracy + 72h metrics pending |
+| M3 Full-stack App | dashboard, auth + approval, REST API v1 | 🚧 35 endpoints live (incl. SSE); contract tests pending |
 | M4 Hardening & v1.0 | observability, docs, release | v1.0.0 tagged |
 
 Acceptance criteria and gate reviews are enforced per [docs/harness/](docs/harness/).
