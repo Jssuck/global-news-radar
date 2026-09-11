@@ -143,9 +143,10 @@ CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     email TEXT NOT NULL UNIQUE,
     password_hash TEXT NOT NULL,          -- PBKDF2-HMAC-SHA256 salt$hex
-    role TEXT NOT NULL DEFAULT 'viewer',  -- admin | editor | viewer（RBAC）
-    status TEXT NOT NULL DEFAULT 'pending',  -- pending | approved | rejected（注册审核三态）
+    role TEXT NOT NULL DEFAULT 'user',  -- admin | editor | user | api-caller（RBAC）
+    status TEXT NOT NULL DEFAULT 'pending',  -- pending|approved|rejected|suspended
     invite_code TEXT,
+    reason TEXT,                          -- 申请理由（设计 5.3.1）
     created_at TEXT NOT NULL,
     decided_at TEXT,
     decided_by INTEGER REFERENCES users(id)
@@ -177,6 +178,24 @@ CREATE TABLE IF NOT EXISTS invite_codes (
     created_by INTEGER REFERENCES users(id),
     created_at TEXT NOT NULL,
     expires_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS audit_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    actor_id INTEGER REFERENCES users(id),
+    action TEXT NOT NULL,               -- registration.approve|reject user.role_change user.suspended...
+    target_type TEXT NOT NULL,
+    target_id INTEGER,
+    detail TEXT,
+    created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS gdelt_checks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    source_id INTEGER NOT NULL REFERENCES sources(id),
+    checked_at TEXT NOT NULL,           -- 每日漏抓对照日期
+    gdelt_hits INTEGER NOT NULL DEFAULT 0,
+    local_count INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE INDEX IF NOT EXISTS idx_articles_source ON articles(source_id);
@@ -214,6 +233,7 @@ _MIGRATIONS = (
     ("articles", "event_id", "event_id INTEGER REFERENCES events(id)"),
     ("articles", "gate1_failed", "gate1_failed INTEGER NOT NULL DEFAULT 0"),
     ("articles", "cleaned_by", "cleaned_by TEXT"),
+    ("users", "reason", "reason TEXT"),
 )
 
 
@@ -229,3 +249,5 @@ def init_db(db_path: str) -> None:
         conn.executescript(SCHEMA)
         for table, column, ddl in _MIGRATIONS:
             _ensure_column(conn, table, column, ddl)
+        # M4：旧库角色别名 viewer → user（设计四角色命名）
+        conn.execute("UPDATE users SET role='user' WHERE role='viewer'")

@@ -21,7 +21,7 @@ def test_register_bootstrap_first_admin(db_path):
     assert u["role"] == "admin" and u["status"] == "approved"
     u2 = register_user(db_path, "viewer@x.com", "password-123", None,
                        "2026-09-11T00:00:00")
-    assert u2["status"] == "pending" and u2["role"] == "viewer"
+    assert u2["status"] == "pending" and u2["role"] == "user"
 
 
 def test_register_invite_code(db_path):
@@ -88,17 +88,21 @@ def test_api_key_roundtrip_and_revoke(db_path):
 
 
 def test_rbac_permissions(db_path):
-    """RBAC：admin 全权；editor 可写不可管用户；viewer 只读。"""
+    """RBAC 四角色：admin 全权；editor 可写不可管用户；user/api-caller 只读。"""
     from app.auth import Principal
     admin = Principal({"role": "admin"}, "session", [])
     editor = Principal({"role": "editor"}, "session", [])
-    viewer = Principal({"role": "viewer"}, "session", [])
-    key_rw = Principal({"role": "viewer"}, "api_key", ["read", "write"])
-    key_ro = Principal({"role": "viewer"}, "api_key", ["read"])
+    user = Principal({"role": "user"}, "session", [])
+    caller = Principal({"role": "api-caller"}, "api_key", ["read"])
+    key_rw = Principal({"role": "user"}, "api_key", ["read", "write"])
+    key_ro = Principal({"role": "user"}, "api_key", ["read"])
     assert admin.can("anything")
     assert editor.can("source:manage") and not editor.can("admin:users")
-    assert viewer.can("read") and not viewer.can("write")
+    assert user.can("read") and not user.can("write")
+    assert caller.can("read") and not caller.can("write")
     assert key_rw.can("write") and not key_ro.can("write")
+    # 旧别名 viewer 按 user 处理（向后兼容）
+    assert Principal({"role": "viewer"}, "session", []).can("read")
 
 
 def test_rate_limiter():
@@ -152,3 +156,155 @@ def test_auth_endpoints_flow(client):
         "email": "v@x.com", "password": "password-123"})
     # viewer session 访问 admin 端点 → 403
     assert client.get("/api/v1/admin/registrations").status_code == 403
+
+
+# ---- M4：六条迁移路径 + 封禁吊销 + 三档模式 + 分级限流 ----
+
+
+def test_state_machine_six_paths(db_path):
+    """M3-F2 六条迁移路径全覆盖。
+
+    [*]→approved(开放注册/首位引导/邀请码旁路)、[*]→pending、
+    pending→approved、pending→rejected、approved→suspended、
+    suspended→approved。
+    """
+    from app.auth import decide_registration, register_user, set_user_status
+    now = "2026-09-11T00:00:00"
+    # 路径1 [*]→approved：首位引导
+    admin = register_user(db_path, "a@x.com", "password-123", None, now)
+    assert admin["status"] == "approved" and admin["role"] == "admin"
+    # 路径2 [*]→approved：开放注册模式
+    u = register_user(db_path, "o@x.com", "password-123", None, now,
+                      registration_mode="open")
+    assert u["status"] == "approved"
+    # 路径3 [*]→approved：邀请码旁路（approval 模式下）
+    from app.auth import create_invite
+    create_invite(db_path, "VIP-9", 1, admin["id"], now)
+    u = register_user(db_path, "v@x.com", "password-123", "VIP-9", now,
+                      registration_mode="approval")
+    assert u["status"] == "approved"
+    # 路径4 [*]→pending → approved
+    u = register_user(db_path, "p1@x.com", "password-123", None, now)
+    assert u["status"] == "pending"
+    decide_registration(db_path, u["id"], True, admin["id"], now)
+    # 路径5 [*]→pending → rejected（终态）
+    u2 = register_user(db_path, "p2@x.com", "password-123", None, now)
+    decide_registration(db_path, u2["id"], False, admin["id"], now)
+    # 路径6 approved→suspended→approved
+    r = set_user_status(db_path, u["id"], "suspended", admin["id"], now)
+    assert r["status"] == "suspended"
+    r = set_user_status(db_path, u["id"], "approved", admin["id"], now)
+    assert r["status"] == "approved"
+    # 非法迁移：rejected 终态、pending 不能直接 suspend
+    import pytest
+    with pytest.raises(ValueError):
+        set_user_status(db_path, u2["id"], "suspended", admin["id"], now)
+
+
+def test_suspend_revokes_sessions_and_keys(db_path):
+    """封禁即时吊销 session 与 API key（M3-F6）。"""
+    from app.auth import (
+        create_api_key,
+        decide_registration,
+        login_user,
+        register_user,
+        resolve_principal,
+        set_user_status,
+    )
+    now = "2026-09-11T00:00:00"
+    admin = register_user(db_path, "a@x.com", "password-123", None, now)
+    u = register_user(db_path, "u@x.com", "password-123", None, now)
+    decide_registration(db_path, u["id"], True, admin["id"], now)
+    token, _ = login_user(db_path, "u@x.com", "password-123", now)
+    key = create_api_key(db_path, u["id"], "ci", "read", now)
+
+    set_user_status(db_path, u["id"], "suspended", admin["id"], now)
+    req = Request({"type": "http", "method": "GET", "path": "/",
+                   "headers": [(b"cookie", f"gnr_session={token}".encode()),
+                               (b"x-api-key", key.encode())],
+                   "client": ("127.0.0.1", 0)})
+    assert resolve_principal(db_path, req) is None
+    assert login_user(db_path, "u@x.com", "password-123", now) is None
+
+
+def test_invite_mode_requires_code(db_path):
+    from app.auth import create_invite, register_user
+    now = "2026-09-11T00:00:00"
+    admin = register_user(db_path, "a@x.com", "password-123", None, now)
+    import pytest
+    with pytest.raises(ValueError, match="邀请制"):
+        register_user(db_path, "u@x.com", "password-123", None, now,
+                      registration_mode="invite")
+    with pytest.raises(ValueError, match="无效"):
+        register_user(db_path, "u@x.com", "password-123", "BAD", now,
+                      registration_mode="invite")
+    create_invite(db_path, "GOOD-1", 1, admin["id"], now)
+    u = register_user(db_path, "u@x.com", "password-123", "GOOD-1", now,
+                      registration_mode="invite")
+    assert u["status"] == "approved"
+
+
+def test_api_caller_no_web_session(db_path):
+    """api-caller 角色仅 API Key 通道，Web 登录被拒（M3-F6 四角色）。"""
+    from app.auth import (
+        create_api_key,
+        login_user,
+        register_user,
+        resolve_principal,
+        set_user_role,
+    )
+    now = "2026-09-11T00:00:00"
+    admin = register_user(db_path, "a@x.com", "password-123", None, now)
+    u = register_user(db_path, "bot@x.com", "password-123", None, now,
+                      registration_mode="open")
+    set_user_role(db_path, u["id"], "api-caller", admin["id"], now)
+    assert login_user(db_path, "bot@x.com", "password-123", now) is None
+    key = create_api_key(db_path, u["id"], "bot", "read", now)
+    req = Request({"type": "http", "method": "GET", "path": "/",
+                   "headers": [(b"x-api-key", key.encode())],
+                   "client": ("127.0.0.1", 0)})
+    p = resolve_principal(db_path, req)
+    assert p and p["role"] == "api-caller"
+
+
+def test_audit_logs_written(db_path):
+    from app.auth import (
+        decide_registration,
+        register_user,
+        set_user_role,
+        set_user_status,
+    )
+    now = "2026-09-11T00:00:00"
+    admin = register_user(db_path, "a@x.com", "password-123", None, now)
+    u = register_user(db_path, "u@x.com", "password-123", None, now)
+    decide_registration(db_path, u["id"], True, admin["id"], now)
+    set_user_role(db_path, u["id"], "editor", admin["id"], now)
+    set_user_status(db_path, u["id"], "suspended", admin["id"], now)
+    from app.db import connect
+    with connect(db_path) as conn:
+        actions = [r["action"] for r in conn.execute(
+            "SELECT action FROM audit_logs ORDER BY id")]
+    assert actions == ["registration.approve", "user.role_change",
+                       "user.suspended"]
+
+
+def test_rate_limit_tiers(client):
+    """M3-F5 分级限流：标准档超限 429+Retry-After；API Key 档阈值独立。"""
+    from app.auth import RateLimiter
+    app = client.app
+    old = app.state.rate_limiters if hasattr(app.state, "rate_limiters") else None
+    app.state.rate_limiters = {"standard": RateLimiter(2),
+                               "api_key": RateLimiter(5)}
+    try:
+        for _ in range(2):
+            assert client.get("/api/v1/health").status_code == 200
+        r = client.get("/api/v1/health")
+        assert r.status_code == 429
+        assert "Retry-After" in r.headers
+        assert r.headers["X-RateLimit-Tier"] == "standard"
+        # API key 档不受影响
+        for _ in range(5):
+            assert client.get("/api/v1/health",
+                              headers={"X-API-Key": "gnr_x"}).status_code in (200, 401, 404)
+    finally:
+        app.state.rate_limiters = old

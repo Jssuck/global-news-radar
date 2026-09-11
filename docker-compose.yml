@@ -1,0 +1,36 @@
+# 一键部署（设计 M4-F4）：docker compose up -d → http://localhost:8000
+# 全部可选；缺省为自托管免登录模式（auth_required=0）。
+services:
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - gnr-data:/data
+      # 可选：挂载 BYO 代理配置（凭据走环境变量，勿入仓库）
+      # - ./config/proxies.yaml:/app/config/proxies.yaml:ro
+    environment:
+      # --- 基础 ---
+      GNR_DB_PATH: /data/gnr.db
+      GNR_POLL_INTERVAL: "600"          # 默认轮询间隔（秒）
+      # GNR_MAX_CONCURRENCY: "16"
+      # GNR_PER_HOST_MIN_INTERVAL: "2"  # 同 host 最小间隔（礼貌限速）
+      # --- 认证 / 限流 ---
+      GNR_AUTH_REQUIRED: "0"            # 1=多用户模式（写操作需登录）
+      GNR_REGISTRATION_MODE: "approval" # open | approval | invite
+      GNR_RATE_LIMIT_PER_MIN: "100"     # 标准档 60–100
+      GNR_RATE_LIMIT_API_KEY_PER_MIN: "600"  # API Key 档 500–1000
+      # --- LLM（可选，未配置则该级关闭）---
+      # GNR_LLM_BASE_URL: "http://host.docker.internal:8001/v1"
+      # GNR_LLM_MODEL: "qwen3-8b"
+      # GNR_LLM_API_KEY_ENV: "GNR_LLM_API_KEY"   # 密钥环境变量名，勿写明文
+      # GNR_LLM_API_KEY: ""            # ← 本行放 .env / secrets，勿提交
+      # --- Embedding（可选，未配置则聚类关闭）---
+      # GNR_EMBED_BASE_URL: "http://host.docker.internal:8002/v1"
+      # GNR_EMBED_MODEL: "bge-m3"
+      # --- 渲染兜底（需自行安装 playwright 镜像变体）---
+      # GNR_RENDER_ENABLED: "0"
+    restart: unless-stopped
+
+volumes:
+  gnr-data:

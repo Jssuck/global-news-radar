@@ -62,3 +62,46 @@ async def fetch_gdelt_articles(client: httpx.AsyncClient, domain: str,
          "sourcecountry": a.get("sourcecountry")}
         for a in articles if a.get("url")
     ]
+
+
+async def daily_gdelt_check(db_path: str, settings,
+                            client_factory) -> dict:
+    """漏抓对照（M3-F4）：geo_restricted 源每日比对 GDELT 命中 vs 本地收录。
+
+    GDELT 限速约 1 req/5s；checked_at 按 UTC 日去重，当日已跑的源跳过。
+    """
+    import asyncio
+
+    from .db import WRITE_LOCK, connect
+    from .pipeline import utcnow
+
+    today = utcnow()[:10]
+    with connect(db_path) as conn:
+        restricted = conn.execute(
+            "SELECT * FROM sources WHERE geo_status='geo_restricted'"
+        ).fetchall()
+        done = {r["source_id"] for r in conn.execute(
+            "SELECT source_id FROM gdelt_checks WHERE checked_at=?",
+            (today,))}
+        todo = [dict(s) for s in restricted if s["id"] not in done]
+
+    results = {}
+    async with client_factory(settings.request_timeout,
+                              settings.user_agent) as client:
+        for src in todo:
+            hits = await fetch_gdelt_articles(
+                client, source_domain(src), timespan=settings.gdelt_timespan)
+            with connect(db_path) as conn:
+                local = conn.execute(
+                    "SELECT COUNT(*) FROM articles WHERE source_id=?"
+                    " AND fetched_at >= datetime('now', '-1 day')",
+                    (src["id"],)).fetchone()[0]
+            with WRITE_LOCK, connect(db_path) as conn:
+                conn.execute(
+                    "INSERT INTO gdelt_checks (source_id, checked_at,"
+                    " gdelt_hits, local_count) VALUES (?,?,?,?)",
+                    (src["id"], today, len(hits), local))
+            results[src["source_key"]] = {"gdelt_hits": len(hits),
+                                          "local": local}
+            await asyncio.sleep(5)  # GDELT 1req/5s 礼貌限速
+    return results

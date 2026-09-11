@@ -25,6 +25,7 @@ from .auth import (
     require_admin,
     revoke_api_key,
     set_user_role,
+    set_user_status,
 )
 from .db import WRITE_LOCK, connect
 from .geo import geo_hint
@@ -496,6 +497,9 @@ def health(request: Request):
         dlq_open = conn.execute(
             "SELECT COUNT(*) FROM dead_letters WHERE status='open'"
         ).fetchone()[0]
+        gdelt_today = conn.execute(
+            "SELECT COUNT(*) FROM gdelt_checks"
+            " WHERE checked_at = date('now')").fetchone()[0]
     return {
         "status": "ok",
         "db": "ok",
@@ -503,10 +507,26 @@ def health(request: Request):
         "sources_active": active,
         "geo_hints_open": open_hints,
         "dead_letters_open": dlq_open,
+        "gdelt_checks_today": gdelt_today,
         "llm_configured": bool(settings.llm_base_url),
         "embedder_configured": bool(settings.embed_base_url),
         "render_enabled": settings.render_enabled,
     }
+
+
+@router.get("/gdelt-checks")
+def list_gdelt_checks(request: Request, days: int = Query(7, ge=1, le=30)):
+    """GDELT 漏抓对照（M3-F4）：受限源每日 GDELT 命中 vs 本地收录。"""
+    with connect(request.app.state.settings.db_path) as conn:
+        rows = conn.execute(
+            """
+            SELECT g.checked_at, s.source_key, s.name, g.gdelt_hits,
+                   g.local_count, s.geo_status
+            FROM gdelt_checks g JOIN sources s ON s.id = g.source_id
+            WHERE g.checked_at >= date('now', ?)
+            ORDER BY g.checked_at DESC, s.source_key
+            """, (f"-{days} days",)).fetchall()
+    return {"total": len(rows), "items": [dict(r) for r in rows]}
 
 
 @router.get("/stats")
@@ -550,6 +570,7 @@ class RegisterIn(BaseModel):
     email: str = Field(min_length=3, max_length=254)
     password: str = Field(min_length=8, max_length=128)
     invite_code: str | None = None
+    reason: str | None = Field(default=None, max_length=500)
 
 
 class LoginIn(BaseModel):
@@ -559,11 +580,14 @@ class LoginIn(BaseModel):
 
 @router.post("/auth/register", status_code=201)
 def register(request: Request, payload: RegisterIn):
-    """注册：首位用户直升 admin+approved（自托管引导），其余进 pending 待审。"""
+    """注册（三档模式 + 邀请码旁路）：open 直通 / approval 待审 / invite 需码。"""
     try:
-        user = register_user(request.app.state.settings.db_path,
-                             payload.email, payload.password,
-                             payload.invite_code, utcnow())
+        user = register_user(
+            request.app.state.settings.db_path,
+            payload.email, payload.password,
+            payload.invite_code, utcnow(),
+            registration_mode=request.app.state.settings.registration_mode,
+            reason=payload.reason)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     return {"id": user["id"], "email": user["email"],
@@ -665,7 +689,7 @@ def list_invites(request: Request, _admin: Annotated[Principal, Depends(require_
 
 
 class RoleIn(BaseModel):
-    role: str = Field(pattern="^(admin|editor|viewer)$")
+    role: str = Field(pattern="^(admin|editor|user|api-caller|viewer)$")
 
 
 @router.patch("/admin/users/{user_id}/role")
@@ -673,10 +697,40 @@ def change_role(request: Request, user_id: int, payload: RoleIn,
                 _admin: Annotated[Principal, Depends(require_admin)]):
     try:
         set_user_role(request.app.state.settings.db_path, user_id,
-                      payload.role)
+                      payload.role, _admin.user["id"], utcnow())
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     return {"id": user_id, "role": payload.role}
+
+
+class StatusIn(BaseModel):
+    status: str = Field(pattern="^(approved|suspended)$")
+
+
+@router.patch("/admin/users/{user_id}/status")
+def change_status(request: Request, user_id: int, payload: StatusIn,
+                  _admin: Annotated[Principal, Depends(require_admin)]):
+    """封禁/解封（approved↔suspended）；封禁即时吊销 session 与 API key。"""
+    try:
+        return set_user_status(request.app.state.settings.db_path, user_id,
+                               payload.status, _admin.user["id"], utcnow())
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+
+@router.get("/admin/audit-logs")
+def list_audit_logs(request: Request,
+                    _admin: Annotated[Principal, Depends(require_admin)],
+                    limit: int = Query(100, ge=1, le=1000)):
+    """审计日志（admin）：角色变更/注册决策/封禁解封留痕。"""
+    with connect(request.app.state.settings.db_path) as conn:
+        rows = conn.execute(
+            """
+            SELECT a.*, u.email AS actor_email FROM audit_logs a
+            LEFT JOIN users u ON u.id = a.actor_id
+            ORDER BY a.id DESC LIMIT ?
+            """, (limit,)).fetchall()
+    return {"total": len(rows), "items": [dict(r) for r in rows]}
 
 
 class ApiKeyIn(BaseModel):

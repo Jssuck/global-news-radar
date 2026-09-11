@@ -43,7 +43,9 @@ class Settings:
     render_enabled: bool        # 渲染兜底总开关（Playwright 可选依赖）
     render_daily_budget: int    # 每日渲染次数上限（设计：渲染占比 ≤15%）
     auth_required: bool         # 多用户模式：写操作与敏感读需登录（默认自托管免登）
-    rate_limit_per_min: int     # API 限流（令牌桶，按 key/IP）
+    registration_mode: str      # open | approval | invite（设计 5.3.1 三档开关）
+    rate_limit_per_min: int     # 标准档限流（匿名/session，60–100 档，默认 100）
+    rate_limit_api_key_per_min: int  # API Key 档限流（500–1000 档，默认 600）
     user_agent: str = "GlobalNewsRadar-MVP/0.1 (+https://github.com/Jssuck/global-news-radar)"
 
 
@@ -73,5 +75,8 @@ def get_settings() -> Settings:
         render_enabled=env.get("GNR_RENDER_ENABLED", "0") == "1",
         render_daily_budget=int(env.get("GNR_RENDER_DAILY_BUDGET", "500")),
         auth_required=env.get("GNR_AUTH_REQUIRED", "0") == "1",
-        rate_limit_per_min=int(env.get("GNR_RATE_LIMIT_PER_MIN", "120")),
+        registration_mode=env.get("GNR_REGISTRATION_MODE", "approval"),
+        rate_limit_per_min=int(env.get("GNR_RATE_LIMIT_PER_MIN", "100")),
+        rate_limit_api_key_per_min=int(
+            env.get("GNR_RATE_LIMIT_API_KEY_PER_MIN", "600")),
     )

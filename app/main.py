@@ -13,7 +13,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
 from .api import router as api_router
-from .auth import RateLimiter, rate_limit_key
+from .auth import RateLimiter, rate_limit_key, rate_tier
 from .config import BASE_DIR, get_settings
 from .db import init_db
 from .events import organize_cycle
@@ -53,8 +53,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 
 async def _organize_loop(settings, stop_event: asyncio.Event) -> None:
-    """embedding 聚类 + 事件整理后台循环（GNR_ORGANIZE_INTERVAL，默认 5min）。"""
+    """embedding 聚类 + 事件整理后台循环；附挂 GDELT 每日漏抓对照（M3-F4）。"""
     log = logging.getLogger("gnr.organize")
+    last_gdelt_day = ""
     while not stop_event.is_set():
         try:
             counts = await organize_cycle(settings.db_path, settings)
@@ -62,6 +63,18 @@ async def _organize_loop(settings, stop_event: asyncio.Event) -> None:
                 log.info("organize cycle: %s", counts)
         except Exception:  # 后台任务异常不中断服务
             log.exception("organize cycle failed")
+        from .gdelt import daily_gdelt_check
+        from .pipeline import default_client_factory, utcnow
+        today = utcnow()[:10]
+        if today != last_gdelt_day:
+            try:
+                results = await daily_gdelt_check(
+                    settings.db_path, settings, default_client_factory)
+                if results:
+                    log.info("gdelt daily check: %s", results)
+                last_gdelt_day = today
+            except Exception:
+                log.exception("gdelt daily check failed")
         try:
             await asyncio.wait_for(stop_event.wait(),
                                    timeout=settings.organize_interval)
@@ -79,14 +92,32 @@ app = FastAPI(
 
 @app.middleware("http")
 async def rate_limit_middleware(request: Request, call_next):
-    """API 令牌桶限流（按 api_key/IP）；/api/v1/* 生效，默认 120 req/min。"""
+    """API 分级限流（设计 M3-F5）：429 + Retry-After + X-RateLimit-* 头。
+
+    两档：API Key 调用方 500–1000 req/min（默认 600），
+    匿名/session 60–100 req/min（默认 100）。分布式部署换 Valkey。
+    """
     if request.url.path.startswith("/api/v1/"):
-        limiter = getattr(request.app.state, "rate_limiter", None)
-        if limiter is None:
-            limiter = RateLimiter(request.app.state.settings.rate_limit_per_min)
-            request.app.state.rate_limiter = limiter
-        if not limiter.allow(rate_limit_key(request)):
-            return JSONResponse({"detail": "请求过于频繁"}, status_code=429)
+        limiters = getattr(request.app.state, "rate_limiters", None)
+        if limiters is None:
+            limiters = {
+                "standard": RateLimiter(
+                    request.app.state.settings.rate_limit_per_min),
+                "api_key": RateLimiter(
+                    request.app.state.settings.rate_limit_api_key_per_min),
+            }
+            request.app.state.rate_limiters = limiters
+        tier = rate_tier(request)
+        limiter = limiters[tier]
+        if not limiter.allow(f"{tier}:{rate_limit_key(request)}"):
+            retry = str(max(1, int(60 / limiter.rate)))
+            return JSONResponse(
+                {"detail": "请求过于频繁",
+                 "retry_after": retry, "tier": tier},
+                status_code=429,
+                headers={"Retry-After": retry,
+                         "X-RateLimit-Limit": str(limiter.rate),
+                         "X-RateLimit-Tier": tier})
     return await call_next(request)
 
 

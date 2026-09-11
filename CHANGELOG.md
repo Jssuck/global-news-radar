@@ -14,6 +14,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - M3a 认证与审核：users/sessions/api_keys/invite_codes 表；PBKDF2 密码散列、凭证只存 SHA-256；注册 pending→approved|rejected 三态状态机（首位用户直升 admin 引导）；RBAC admin/editor/viewer；写端点权限门（GNR_AUTH_REQUIRED）；/api/v1/* 令牌桶限流
 - M3b REST 补全：GET/POST/PATCH /sources、/sources/{id} 详情、/events 列表与成员、/dead-letters 队列、/health 健康度、/stream SSE 事件流（fetch/geo_hint/event 三通道）
 - M3c 前端界面：新闻流事件区与降级/LLM 徽标、源管理表单与启停、/admin 审核台（注册审批/邀请码/geo-hints/代理配置/死信）、登录与注册页
+- M4 硬化：注册状态机补齐六条迁移路径——三档实例开关（open/approval/invite，GNR_REGISTRATION_MODE）、邀请码任何模式旁路直通、approved↔suspended 封禁解封（session+API key 即时吊销）、申请理由字段；RBAC 四角色（viewer→user 迁移 + api-caller 无 Web 会话）；audit_logs 审计表 + /admin/audit-logs 端点
+- 分级限流两档（标准 100 / API Key 600 req/min），429 + Retry-After + X-RateLimit-* 头
+- GDELT 漏抓对照（M3-F4）：gdelt_checks 表 + 每日后台比对 + /gdelt-checks 端点 + health 字段
+- geo 判定黄金集 tests/fixtures/geo_golden.json（54 标注样本）+ ≥95% 准确率/429-5xx 零误判回归门
+- OpenAPI 契约测试（全部 37 端点在 schema 注册 + 无参 GET 可达性 + 列表端点 total/items 契约）
+- 故障注入测试：LLM 宕机→DLQ（恰好一次重试）、organize 失败→organized=0 占位、_fetch_one 单源异常隔离
+- Dockerfile + docker-compose.yml 一键部署；docs/deploy.md、docs/operations.md、docs/community/source-request.md（M3-N2/M4-F4/N1）
+- scripts/security_scan.py：密钥泄漏正则扫描 + 依赖许可证高危清单（M4-F3），当前 0 命中
 
 ### Changed
 - 源健康复测（出口恢复）：443 源 93.9% 可达；bolnews/kompas/tribune 降级至 sitemap 策略；abs-cbn/lebanonfiles/mindanews/thewhistler 按 robots 不可读保守规则记 blocked_legal；thejakartapost/nation-africa 记 inconclusive 待 html_list
