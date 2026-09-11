@@ -35,6 +35,8 @@ CREATE TABLE IF NOT EXISTS sources (
     active INTEGER NOT NULL DEFAULT 1
 );
 
+-- articles.degraded=1 表示聚合层降级记录（仅标题+URL 元数据，无正文，见设计 3.3.2 受限降级模式）
+
 CREATE TABLE IF NOT EXISTS articles (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     source_id INTEGER NOT NULL REFERENCES sources(id),
@@ -45,7 +47,9 @@ CREATE TABLE IF NOT EXISTS articles (
     body TEXT,                            -- 清洗后正文（仅本地使用，不经 API 全文分发）
     language TEXT,
     published_at TEXT,
-    fetched_at TEXT NOT NULL
+    fetched_at TEXT NOT NULL,
+    degraded INTEGER NOT NULL DEFAULT 0,  -- 1=聚合层降级记录（无正文）
+    event_id INTEGER REFERENCES events(id)  -- 事件簇归属（M2 第三级整理写入）
 );
 
 CREATE TABLE IF NOT EXISTS fetch_log (
@@ -58,11 +62,86 @@ CREATE TABLE IF NOT EXISTS fetch_log (
     extraction_ok INTEGER NOT NULL DEFAULT 0,    -- 本轮正文抽取成功篇数
     extraction_total INTEGER NOT NULL DEFAULT 0, -- 本轮正文抓取尝试篇数
     dedup_hits INTEGER NOT NULL DEFAULT 0,       -- 本轮命中 URL 哈希去重的条数
+    proxy_key TEXT,                   -- 本轮实际使用的代理 profile_key（证据留存）
     detail TEXT
+);
+
+CREATE TABLE IF NOT EXISTS proxy_profiles (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    profile_key TEXT NOT NULL UNIQUE,     -- BYO 代理配置标识（对应 proxies.yaml profile_id）
+    type TEXT NOT NULL,                   -- datacenter | residential | isp | mobile
+    country TEXT NOT NULL,                -- 出口地域 ISO 3166-1 alpha-2
+    endpoint TEXT NOT NULL,               -- 代理接入点（host:port / URL）
+    credentials_env TEXT,                 -- 本地环境变量名，凭据不落明文（设计 3.3.3）
+    provider TEXT,
+    notes TEXT,
+    created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS proxy_bindings (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    scope TEXT NOT NULL,                  -- source | country | global（源级>国家级>全局）
+    source_id INTEGER REFERENCES sources(id),   -- scope=source 时必填
+    country_code TEXT,                    -- scope=country 时必填
+    proxy_profile_id INTEGER NOT NULL REFERENCES proxy_profiles(id),
+    priority INTEGER NOT NULL DEFAULT 100,-- 同级冲突取小者
+    created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS geo_hints (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    source_id INTEGER NOT NULL REFERENCES sources(id),
+    required_region TEXT,                 -- 判定所需出口地域（对照确认后反推，否则取源国）
+    evidence TEXT,                        -- 检测证据（状态码/信号/对照结果）
+    status TEXT NOT NULL DEFAULT 'open',  -- open | resolved | ignored
+    created_at TEXT NOT NULL,
+    resolved_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS dead_letters (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    stage TEXT NOT NULL,                  -- 管线阶段（llm_clean / organize 等）
+    article_id INTEGER REFERENCES articles(id),
+    payload TEXT,                         -- 失败输入/输出快照（JSON 文本）
+    errors TEXT,                          -- 校验/运行错误（JSON 文本）
+    status TEXT NOT NULL DEFAULT 'open',  -- open | resolved | discarded
+    created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS llm_calls (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    stage TEXT NOT NULL,                  -- clean | organize | translate 等
+    model TEXT,
+    prompt_tokens INTEGER NOT NULL DEFAULT 0,
+    completion_tokens INTEGER NOT NULL DEFAULT 0,
+    success INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT,                           -- 事件级标题（第三级 LLM 整理后填充）
+    summary TEXT,
+    iptc_tags TEXT,                       -- JSON 数组
+    heat_score REAL,
+    article_count INTEGER NOT NULL DEFAULT 0,
+    organized INTEGER NOT NULL DEFAULT 0, -- 0=未整理占位（LLM 不可用时降级），1=已整理
+    first_seen TEXT NOT NULL,
+    last_updated TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS article_embeddings (
+    article_id INTEGER PRIMARY KEY REFERENCES articles(id),
+    embedding BLOB NOT NULL,              -- float32 向量（numpy buffer）
+    model_version TEXT NOT NULL,
+    created_at TEXT NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_articles_source ON articles(source_id);
 CREATE INDEX IF NOT EXISTS idx_fetch_log_source ON fetch_log(source_id);
+CREATE INDEX IF NOT EXISTS idx_geo_hints_source ON geo_hints(source_id);
+CREATE INDEX IF NOT EXISTS idx_proxy_bindings_scope ON proxy_bindings(scope);
+CREATE INDEX IF NOT EXISTS idx_dead_letters_status ON dead_letters(status);
 """
 
 # 写操作串行化锁（单进程 MVP，避免并发写 SQLite 报 database is locked）
@@ -86,6 +165,9 @@ _MIGRATIONS = (
     ("fetch_log", "extraction_ok", "extraction_ok INTEGER NOT NULL DEFAULT 0"),
     ("fetch_log", "extraction_total", "extraction_total INTEGER NOT NULL DEFAULT 0"),
     ("fetch_log", "dedup_hits", "dedup_hits INTEGER NOT NULL DEFAULT 0"),
+    ("fetch_log", "proxy_key", "proxy_key TEXT"),
+    ("articles", "degraded", "degraded INTEGER NOT NULL DEFAULT 0"),
+    ("articles", "event_id", "event_id INTEGER REFERENCES events(id)"),
 )
 
 

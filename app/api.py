@@ -6,21 +6,25 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Query, Request
+from pydantic import BaseModel, Field
 
 from . import metrics
-from .db import connect
+from .db import WRITE_LOCK, connect
 from .geo import geo_hint
-from .pipeline import fetch_source
+from .pipeline import fetch_source, utcnow
+from .proxyconf import create_binding, create_profile
 
 router = APIRouter(prefix="/api/v1", tags=["v1"])
 
 
 def _source_dict(row) -> dict:
     src = dict(row)
-    # 受限源附提示文案（设计 3.3.2 的 MVP 文字版）
+    status = src["geo_status"]
+    # 受限/疑似受限源附提示文案（设计 3.3.2）
     src["hint"] = (
-        geo_hint(src["required_region"], src["geo_evidence"])
-        if src["geo_status"] == "geo_restricted" else None
+        geo_hint(src["required_region"], src["geo_evidence"],
+                 suspected=(status == "geo_suspected"))
+        if status in ("geo_restricted", "geo_suspected") else None
     )
     return src
 
@@ -114,6 +118,164 @@ async def check_source(request: Request, source_id: int):
         raise HTTPException(status_code=404, detail="源不存在")
     result = await fetch_source(settings.db_path, dict(row), settings)
     return result
+
+
+# ---- M2a：地域受限提示 + BYO 代理配置 ----
+
+
+@router.get("/geo-hints")
+def list_geo_hints(request: Request, status: str | None = None,
+                   country: str | None = None):
+    """地域受限提示列表（设计 5.4：按国家/状态过滤），联源名与国家。"""
+    where, params = [], []
+    if status:
+        where.append("h.status = ?")
+        params.append(status)
+    if country:
+        where.append("s.country = ?")
+        params.append(country)
+    clause = ("WHERE " + " AND ".join(where)) if where else ""
+    with connect(request.app.state.settings.db_path) as conn:
+        rows = conn.execute(
+            f"""
+            SELECT h.*, s.source_key, s.name AS source_name, s.country
+            FROM geo_hints h JOIN sources s ON s.id = h.source_id
+            {clause} ORDER BY h.created_at DESC
+            """,
+            params,
+        ).fetchall()
+    items = []
+    for r in rows:
+        item = dict(r)
+        item["hint"] = geo_hint(item["required_region"], item["evidence"],
+                                suspected=(item["status"] == "suspected"))
+        items.append(item)
+    return {"total": len(items), "items": items}
+
+
+@router.post("/geo-hints/{hint_id}/resolve")
+def resolve_geo_hint(request: Request, hint_id: int):
+    """标记提示已处理（用户配置代理后联动）；源恢复待复检状态。"""
+    now = utcnow()
+    with WRITE_LOCK, connect(request.app.state.settings.db_path) as conn:
+        hint = conn.execute("SELECT * FROM geo_hints WHERE id = ?",
+                            (hint_id,)).fetchone()
+        if not hint:
+            raise HTTPException(status_code=404, detail="提示不存在")
+        conn.execute(
+            "UPDATE geo_hints SET status='resolved', resolved_at=? WHERE id=?",
+            (now, hint_id),
+        )
+        # 源回到 unknown：下一轮抓取（经新绑定代理）重新判定
+        conn.execute(
+            "UPDATE sources SET geo_status='unknown' WHERE id = ?",
+            (hint["source_id"],),
+        )
+    return {"id": hint_id, "status": "resolved", "resolved_at": now}
+
+
+class ProxyProfileIn(BaseModel):
+    profile_key: str = Field(min_length=1, max_length=64)
+    type: str = Field(pattern="^(datacenter|residential|isp|mobile)$")
+    country: str = Field(min_length=2, max_length=2)
+    endpoint: str = Field(min_length=1)
+    credentials_env: str | None = None
+    provider: str | None = None
+    notes: str | None = None
+
+
+def _profile_out(row) -> dict:
+    """凭据引用只返回 env 变量名，绝不返回凭据值（设计 3.3.3）。"""
+    d = dict(row)
+    d["credentials_env_set"] = bool(d.get("credentials_env"))
+    return d
+
+
+@router.get("/proxy-profiles")
+def list_proxy_profiles(request: Request):
+    """代理配置列表（凭据不返回，仅 env 变量名引用）。"""
+    with connect(request.app.state.settings.db_path) as conn:
+        rows = conn.execute(
+            "SELECT * FROM proxy_profiles ORDER BY id").fetchall()
+    return {"total": len(rows), "items": [_profile_out(r) for r in rows]}
+
+
+@router.post("/proxy-profiles", status_code=201)
+def add_proxy_profile(request: Request, payload: ProxyProfileIn):
+    """创建代理配置（BYO）；profile_key 重复返回 409。"""
+    with connect(request.app.state.settings.db_path) as conn:
+        dup = conn.execute("SELECT 1 FROM proxy_profiles WHERE profile_key = ?",
+                           (payload.profile_key,)).fetchone()
+    if dup:
+        raise HTTPException(status_code=409, detail="profile_key 已存在")
+    try:
+        return _profile_out(create_profile(
+            request.app.state.settings.db_path,
+            payload.model_dump(), utcnow()))
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@router.delete("/proxy-profiles/{profile_id}")
+def delete_proxy_profile(request: Request, profile_id: int):
+    """删除代理配置；仍有绑定引用时 409 拒绝（级联检查）。"""
+    with WRITE_LOCK, connect(request.app.state.settings.db_path) as conn:
+        bound = conn.execute(
+            "SELECT COUNT(*) FROM proxy_bindings WHERE proxy_profile_id = ?",
+            (profile_id,)).fetchone()[0]
+        if bound:
+            raise HTTPException(
+                status_code=409,
+                detail=f"仍有 {bound} 条绑定引用该配置，请先解除绑定")
+        cur = conn.execute("DELETE FROM proxy_profiles WHERE id = ?",
+                           (profile_id,))
+        if cur.rowcount == 0:
+            raise HTTPException(status_code=404, detail="配置不存在")
+    return {"deleted": profile_id}
+
+
+class ProxyBindingIn(BaseModel):
+    scope: str = Field(pattern="^(source|country|global)$")
+    source_id: int | None = None
+    country_code: str | None = None
+    proxy_profile_id: int
+    priority: int = 100
+
+
+@router.get("/proxy-bindings")
+def list_proxy_bindings(request: Request):
+    """绑定列表（源级/国家级/全局三级）。"""
+    with connect(request.app.state.settings.db_path) as conn:
+        rows = conn.execute(
+            """
+            SELECT b.*, p.profile_key, p.country AS proxy_country,
+                   s.source_key
+            FROM proxy_bindings b
+            JOIN proxy_profiles p ON p.id = b.proxy_profile_id
+            LEFT JOIN sources s ON s.id = b.source_id
+            ORDER BY b.scope, b.priority
+            """).fetchall()
+    return {"total": len(rows), "items": [dict(r) for r in rows]}
+
+
+@router.post("/proxy-bindings", status_code=201)
+def add_proxy_binding(request: Request, payload: ProxyBindingIn):
+    """创建绑定（scope 必填字段与 profile 存在性校验）。"""
+    try:
+        return create_binding(request.app.state.settings.db_path,
+                              payload.model_dump(), utcnow())
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@router.delete("/proxy-bindings/{binding_id}")
+def delete_proxy_binding(request: Request, binding_id: int):
+    with WRITE_LOCK, connect(request.app.state.settings.db_path) as conn:
+        cur = conn.execute("DELETE FROM proxy_bindings WHERE id = ?",
+                           (binding_id,))
+        if cur.rowcount == 0:
+            raise HTTPException(status_code=404, detail="绑定不存在")
+    return {"deleted": binding_id}
 
 
 @router.get("/stats")

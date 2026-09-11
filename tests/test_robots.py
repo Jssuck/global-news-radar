@@ -23,7 +23,7 @@ def _counting_factory(routes: dict[str, httpx.Response], counter: dict):
         counter[key] = counter.get(key, 0) + 1
         return routes.get(key) or httpx.Response(404, text="not found")
 
-    def factory(timeout, user_agent) -> httpx.AsyncClient:
+    def factory(timeout, user_agent, proxy=None) -> httpx.AsyncClient:
         return httpx.AsyncClient(transport=httpx.MockTransport(handler))
 
     return factory

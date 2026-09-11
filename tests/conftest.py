@@ -66,8 +66,10 @@ def make_mock_client_factory(routes: dict[str, httpx.Response]):
             return httpx.Response(304)
         return resp
 
-    def factory(timeout, user_agent) -> httpx.AsyncClient:
-        return httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    def factory(timeout, user_agent, proxy=None) -> httpx.AsyncClient:
+        client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+        client._mock_proxy = proxy  # 供测试断言代理注入
+        return client
 
     return factory
 

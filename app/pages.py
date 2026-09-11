@@ -9,7 +9,6 @@ from fastapi.templating import Jinja2Templates
 
 from .db import connect
 from .geo import geo_hint
-from .proxyconf import load_proxy_config
 
 router = APIRouter(include_in_schema=False)
 templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
@@ -40,7 +39,7 @@ def index(request: Request):
 
 @router.get("/sources", response_class=HTMLResponse)
 def sources_board(request: Request):
-    """源状态看板：含受限源的地域代理提示与代理配置展示（只读）。"""
+    """源状态看板：受限/疑似受限源提示 + 三级代理绑定状态展示。"""
     settings = request.app.state.settings
     with connect(settings.db_path) as conn:
         rows = conn.execute(
@@ -49,21 +48,46 @@ def sources_board(request: Request):
                    (SELECT MAX(fetched_at) FROM fetch_log f WHERE f.source_id = s.id)
                        AS last_log_at,
                    (SELECT COUNT(*) FROM articles a WHERE a.source_id = s.id)
-                       AS article_count
-            FROM sources s ORDER BY s.geo_status = 'geo_restricted' DESC,
+                       AS article_count,
+                   (SELECT p.profile_key FROM proxy_bindings b
+                    JOIN proxy_profiles p ON p.id = b.proxy_profile_id
+                    WHERE b.scope = 'source' AND b.source_id = s.id
+                    ORDER BY b.priority LIMIT 1) AS bound_proxy
+            FROM sources s ORDER BY s.geo_status IN ('geo_restricted','geo_suspected') DESC,
                                     s.country, s.name
             """
         ).fetchall()
+        hints = conn.execute(
+            """
+            SELECT h.*, s.name AS source_name FROM geo_hints h
+            JOIN sources s ON s.id = h.source_id
+            WHERE h.status IN ('open','suspected') ORDER BY h.created_at DESC
+            """
+        ).fetchall()
+        profiles = conn.execute(
+            "SELECT * FROM proxy_profiles ORDER BY id").fetchall()
+        bindings = conn.execute(
+            """
+            SELECT b.*, p.profile_key, s.source_key FROM proxy_bindings b
+            JOIN proxy_profiles p ON p.id = b.proxy_profile_id
+            LEFT JOIN sources s ON s.id = b.source_id
+            ORDER BY b.scope, b.priority
+            """).fetchall()
     source_list = []
     for r in rows:
         src = dict(r)
+        status = src["geo_status"]
         src["hint"] = (
-            geo_hint(src["required_region"], src["geo_evidence"])
-            if src["geo_status"] == "geo_restricted" else None
+            geo_hint(src["required_region"], src["geo_evidence"],
+                     suspected=(status == "geo_suspected"))
+            if status in ("geo_restricted", "geo_suspected") else None
         )
         source_list.append(src)
-    proxy_cfg = load_proxy_config(settings.proxy_config)
+    proxy_cfg = {"profiles": [dict(p) for p in profiles],
+                 "bindings": [dict(b) for b in bindings],
+                 "is_example": False}
     return templates.TemplateResponse(
         request, "sources.html",
-        {"sources": source_list, "proxy_cfg": proxy_cfg},
+        {"sources": source_list, "proxy_cfg": proxy_cfg,
+         "geo_hints": [dict(h) for h in hints]},
     )

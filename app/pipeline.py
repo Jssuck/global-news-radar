@@ -1,5 +1,6 @@
 """抓取管线：发现（RSS / sitemap）→ robots 合规检查 → 条件 GET → 地域受限检测
-→ 正文抽取兜底链 → 去重入库。
+（强/中信号 + 他国出口对照）→ 代理绑定路由 → 正文抽取兜底链 → 去重入库；
+受限降级模式走 GDELT 聚合层（仅标题+URL 元数据）。
 
 可测试性：所有网络访问经 client_factory 注入，测试用 httpx.MockTransport 即可
 完全离线运行（见 tests/）；robots 缓存与 per-host 限速器亦可注入。
@@ -19,7 +20,14 @@ import httpx
 from . import sitemap
 from .cleaner import detect_language, extract_article, normalize_url, url_hash
 from .db import WRITE_LOCK, connect
-from .geo import evaluate_response
+from .gdelt import fetch_gdelt_articles, source_domain
+from .geo import (
+    GeoVerdict,
+    confirmed_by_contrast,
+    evaluate_response,
+    evaluate_truncation,
+)
+from .proxyconf import alt_country_profile, proxy_url, resolve_proxy
 from .robots import default_robots_cache
 
 log = logging.getLogger("gnr.pipeline")
@@ -37,12 +45,17 @@ def utcnow() -> str:
     return datetime.now(UTC).isoformat(timespec="seconds")
 
 
-def default_client_factory(timeout: float, user_agent: str) -> httpx.AsyncClient:
-    return httpx.AsyncClient(
-        timeout=timeout,
-        follow_redirects=True,
-        headers={"User-Agent": user_agent},
-    )
+def default_client_factory(timeout: float, user_agent: str,
+                           proxy: str | None = None) -> httpx.AsyncClient:
+    """默认 HTTP client 工厂；proxy 为 httpx 代理 URL（None=直连）。"""
+    kwargs: dict[str, Any] = {
+        "timeout": timeout,
+        "follow_redirects": True,
+        "headers": {"User-Agent": user_agent},
+    }
+    if proxy:
+        kwargs["proxy"] = proxy
+    return httpx.AsyncClient(**kwargs)
 
 
 def adjust_interval(current_minutes: float, new_articles: int,
@@ -103,6 +116,9 @@ async def fetch_source(db_path: str, source: dict, settings,
     client_factory 为 None 时在调用时解析默认工厂，测试可 monkeypatch
     app.pipeline.default_client_factory 注入 MockTransport 实现离线运行。
     robots/limiter 为可注入的 robots 缓存与 per-host 限速器（默认进程级共享）。
+
+    M2 新增：三级代理绑定解析（源级>国家级>全局）注入抓取出口；
+    geo_status=geo_restricted 且无代理绑定的源走 GDELT 聚合层降级模式。
     """
     if client_factory is None:
         client_factory = default_client_factory
@@ -113,17 +129,29 @@ async def fetch_source(db_path: str, source: dict, settings,
                     "http_status": None, "detail": None,
                     "extraction_ok": 0, "extraction_total": 0,
                     "dedup_hits": 0, "robots_skipped": 0}
-    strategy = source.get("discovery_strategy") or "rss"
+
+    # 0a) 三级代理绑定解析：命中则本轮经代理出口抓取
+    profile = resolve_proxy(db_path, source)
+    bound_proxy = proxy_url(profile) if profile else None
+    proxy_key = profile["profile_key"] if profile else None
+
+    # 0b) 受限降级模式：已确认地域受限且无代理绑定 → 仅聚合层元数据
+    if source.get("geo_status") == "geo_restricted" and not bound_proxy:
+        return await _degraded_fetch(db_path, source, settings,
+                                     client_factory, now, result)
+
     endpoint = source["feed_url"]  # rss 为 feed 地址；sitemap 策略为 sitemap/站点根地址
 
-    async with client_factory(settings.request_timeout, settings.user_agent) as client:
-        # 0) robots.txt 合规检查（按 UA，域名级缓存 1 小时）
+    async with client_factory(settings.request_timeout, settings.user_agent,
+                              proxy=bound_proxy) as client:
+        # 0c) robots.txt 合规检查（按 UA，域名级缓存 1 小时）
         if not await robots.allowed(client, endpoint, settings.user_agent):
             result["result"] = "robots_blocked"
             result["detail"] = f"robots.txt 禁止 UA 抓取: {endpoint}"
-            _finalize(db_path, source, result, now)
+            _finalize(db_path, source, result, now, proxy_key=proxy_key)
             return result
 
+        strategy = source.get("discovery_strategy") or "rss"
         if strategy == "sitemap":
             # sitemap 二级发现：lastmod 仅作提示，哈希去重兜底（设计 3.2）
             recent = await sitemap.discover_urls(
@@ -136,7 +164,7 @@ async def fetch_source(db_path: str, source: dict, settings,
                 settings, robots, limiter)
             if outcome == "ok":
                 _set_geo(db_path, source["id"], "ok", None, None)
-            _finalize(db_path, source, result, now)
+            _finalize(db_path, source, result, now, proxy_key=proxy_key)
             return result
 
         # ---- RSS 策略：条件 GET 抓 feed ----
@@ -151,35 +179,53 @@ async def fetch_source(db_path: str, source: dict, settings,
             resp = await client.get(endpoint, headers=headers)
         except httpx.HTTPError as exc:
             result["detail"] = f"网络错误: {exc.__class__.__name__}"
-            _finalize(db_path, source, result, now)
+            _finalize(db_path, source, result, now, proxy_key=proxy_key)
             return result
 
         result["http_status"] = resp.status_code
 
-        # 2) 地域受限 / 反爬信号判定（geo_verdict 移植逻辑）
-        verdict = evaluate_response(resp.status_code, resp.text)
+        # 2) 地域受限 / 反爬信号判定（强/中信号分级 + 对照确认）
+        verdict = evaluate_response(resp.status_code, resp.text,
+                                    final_url=str(resp.url),
+                                    request_url=endpoint)
+        verdict = await _confirm_if_suspected(
+            db_path, client_factory, settings, source, endpoint, verdict)
         if verdict.verdict == "geo_restricted":
             result["result"] = "geo_restricted"
             result["detail"] = verdict.reason
-            # MVP 简化：required_region 取源所属国家（设计 3.3.1 的对照实验反推留待 v1.0）
-            _set_geo(db_path, source["id"], "geo_restricted", source["country"], verdict.reason)
-            _finalize(db_path, source, result, now)
+            region = (verdict.confirmed_region
+                      or source.get("required_region") or source["country"])
+            _set_geo(db_path, source["id"], "geo_restricted",
+                     region, verdict.reason)
+            _open_hint(db_path, source["id"], region,
+                       verdict.reason, now, confirmed=True)
+            _finalize(db_path, source, result, now, proxy_key=proxy_key)
+            return result
+        if verdict.verdict == "geo_suspected":
+            result["result"] = "geo_suspected"
+            result["detail"] = verdict.reason
+            _set_geo(db_path, source["id"], "geo_suspected",
+                     source["country"], verdict.reason)
+            _open_hint(db_path, source["id"], source["country"],
+                       verdict.reason, now, confirmed=False)
+            _finalize(db_path, source, result, now, proxy_key=proxy_key)
             return result
         if verdict.verdict == "anti_bot":
             result["result"] = "anti_bot"
             result["detail"] = verdict.reason
-            _finalize(db_path, source, result, now)
+            _finalize(db_path, source, result, now, proxy_key=proxy_key)
             return result
 
         # 3) 304 未变更：零成本跳过
         if resp.status_code == 304:
             result["result"] = "not_modified"
             _finalize(db_path, source, result, now, etag=source.get("etag"),
-                      last_modified=source.get("last_modified"))
+                      last_modified=source.get("last_modified"),
+                      proxy_key=proxy_key)
             return result
         if resp.status_code != 200:
             result["detail"] = f"非预期状态码 {resp.status_code}"
-            _finalize(db_path, source, result, now)
+            _finalize(db_path, source, result, now, proxy_key=proxy_key)
             return result
 
         # 4) 解析 feed，逐篇抓正文
@@ -194,8 +240,85 @@ async def fetch_source(db_path: str, source: dict, settings,
             _set_geo(db_path, source["id"], "ok", None, None)
         _finalize(db_path, source, result, now,
                   etag=resp.headers.get("ETag") if outcome == "ok" else None,
-                  last_modified=resp.headers.get("Last-Modified") if outcome == "ok" else None)
+                  last_modified=resp.headers.get("Last-Modified") if outcome == "ok" else None,
+                  proxy_key=proxy_key)
         return result
+
+
+async def _confirm_if_suspected(db_path: str, client_factory, settings,
+                                source: dict, url: str, verdict):
+    """中信号对照验证：用一个他国代理出口重取同 URL，复现差异才确认（设计 3.3.1）。
+
+    无可用的他国代理时保持 geo_suspected（提示用户补出口做确认）。
+    """
+    if verdict.verdict != "geo_suspected":
+        return verdict
+    alt = alt_country_profile(db_path, source.get("country"))
+    if not alt:
+        verdict.reason += "；无可用他国出口，待用户配置代理后对照确认"
+        return verdict
+    proxy = proxy_url(alt)
+    if not proxy:
+        return verdict
+    try:
+        async with client_factory(settings.request_timeout,
+                                  settings.user_agent, proxy=proxy) as alt_client:
+            resp = await alt_client.get(url)
+        # 对照出口取到 200 且非空页面视为取得完整内容
+        via_ok = resp.status_code == 200 and len(resp.text) > 200
+    except httpx.HTTPError:
+        via_ok = False
+    confirmed, region, evidence = confirmed_by_contrast(
+        direct_ok=False, via_proxy_ok=via_ok,
+        proxy_country=alt.get("country"))
+    if confirmed:
+        return GeoVerdict("geo_restricted",
+                          f"{verdict.reason}；{evidence}",
+                          [*verdict.signals, "multi_egress_confirm"],
+                          confirmed_region=region)
+    verdict.reason += f"；{evidence}"
+    return verdict
+
+
+async def _degraded_fetch(db_path: str, source: dict, settings,
+                          client_factory, now: str, result: dict) -> dict:
+    """受限降级模式：仅经 GDELT 聚合层取标题+URL 元数据（设计 3.3.2）。
+
+    不抓正文、不触达被封锁站点本身；degraded=1 标记入库。
+    """
+    async with client_factory(settings.request_timeout,
+                              settings.user_agent) as client:
+        items = await fetch_gdelt_articles(client, source_domain(source))
+    inserted = 0
+    for item in items:
+        norm = normalize_url(item["url"])
+        digest = url_hash(norm)
+        with WRITE_LOCK, connect(db_path) as conn:
+            exists = conn.execute(
+                "SELECT 1 FROM articles WHERE url_hash = ?", (digest,)
+            ).fetchone()
+            if exists:
+                result["dedup_hits"] += 1
+                continue
+            conn.execute(
+                """
+                INSERT INTO articles (source_id, url, url_hash, title, summary,
+                                      body, language, published_at, fetched_at,
+                                      degraded)
+                VALUES (?, ?, ?, ?, ?, NULL, ?, ?, ?, 1)
+                """,
+                (source["id"], norm, digest, item.get("title") or "(无标题)",
+                 (item.get("title") or "")[:200] or None,
+                 item.get("language") or source["language"],
+                 item.get("seendate"), now),
+            )
+            inserted += 1
+    result["result"] = "degraded"
+    result["new_articles"] = inserted
+    result["detail"] = (f"受限降级：经 GDELT 聚合层取得 {len(items)} 条元数据"
+                        f"（{inserted} 条新），正文不可用直至配置代理")
+    _finalize(db_path, source, result, now)
+    return result
 
 
 async def _process_candidates(db_path: str, client: httpx.AsyncClient,
@@ -249,10 +372,14 @@ async def _fetch_and_store_article(db_path: str, client: httpx.AsyncClient,
         resp = await client.get(norm_url)
     except httpx.HTTPError:
         return False
-    verdict = evaluate_response(resp.status_code, resp.text)
+    verdict = evaluate_response(resp.status_code, resp.text,
+                                final_url=str(resp.url),
+                                request_url=norm_url)
     if verdict.verdict == "geo_restricted":
         _set_geo(db_path, source["id"], "geo_restricted", source["country"],
                  f"文章页: {verdict.reason}")
+        _open_hint(db_path, source["id"], source["country"],
+                   f"文章页: {verdict.reason}", utcnow(), confirmed=True)
         return "geo_restricted"
     if resp.status_code != 200:
         return False
@@ -285,7 +412,31 @@ async def _fetch_and_store_article(db_path: str, client: httpx.AsyncClient,
             # url_hash 唯一约束冲突 = 并发重复摄入，按精确去重规则丢弃
             result["dedup_hits"] += 1
             return False
+
+    # 中信号：正文截断检测（与该源历史正文长度对比，样本不足不判）
+    if body:
+        truncation = evaluate_truncation(
+            len(body), _history_body_lens(db_path, source["id"]))
+        if truncation:
+            _set_geo(db_path, source["id"], "geo_suspected", source["country"],
+                     truncation.reason)
+            _open_hint(db_path, source["id"], source["country"],
+                       truncation.reason, utcnow(), confirmed=False)
     return True
+
+
+def _history_body_lens(db_path: str, source_id: int, limit: int = 20) -> list[int]:
+    """该源近期入库文章的正文长度（截断检测的历史基线）。"""
+    with connect(db_path) as conn:
+        rows = conn.execute(
+            """
+            SELECT LENGTH(body) AS n FROM articles
+            WHERE source_id = ? AND body IS NOT NULL AND degraded = 0
+            ORDER BY id DESC LIMIT ?
+            """,
+            (source_id, limit),
+        ).fetchall()
+    return [r["n"] for r in rows]
 
 
 def _set_geo(db_path: str, source_id: int, status: str,
@@ -297,8 +448,38 @@ def _set_geo(db_path: str, source_id: int, status: str,
         )
 
 
+def _open_hint(db_path: str, source_id: int, region: str | None,
+               evidence: str, now: str, *, confirmed: bool) -> None:
+    """打开地域受限提示（同源同状态只保留一条 open 提示，避免重复轰炸）。
+
+    confirmed=False 为中信号未确认状态（hint 文案按 suspected 处理）。
+    """
+    status = "open" if confirmed else "suspected"
+    with WRITE_LOCK, connect(db_path) as conn:
+        existing = conn.execute(
+            "SELECT id, status FROM geo_hints WHERE source_id = ?"
+            " AND status IN ('open','suspected')",
+            (source_id,),
+        ).fetchone()
+        if existing:
+            # 证据升级：suspected 轮转为 open 时更新证据与状态
+            if confirmed and existing["status"] == "suspected":
+                conn.execute(
+                    "UPDATE geo_hints SET status='open', required_region=?,"
+                    " evidence=? WHERE id=?",
+                    (region, evidence, existing["id"]),
+                )
+            return
+        conn.execute(
+            "INSERT INTO geo_hints (source_id, required_region, evidence,"
+            " status, created_at) VALUES (?, ?, ?, ?, ?)",
+            (source_id, region, evidence, status, now),
+        )
+
+
 def _finalize(db_path: str, source: dict, result: dict, now: str,
-              etag: str | None = None, last_modified: str | None = None) -> None:
+              etag: str | None = None, last_modified: str | None = None,
+              proxy_key: str | None = None) -> None:
     """统一收尾：自适应间隔回写 + 更新源抓取状态 + 写 fetch_log。"""
     # 自适应轮询：仅在成功轮（ok/not_modified）调整，失败轮不动间隔
     interval = source.get("interval_minutes") or 10
@@ -320,10 +501,11 @@ def _finalize(db_path: str, source: dict, result: dict, now: str,
             """
             INSERT INTO fetch_log (source_id, fetched_at, http_status, result,
                                    new_articles, extraction_ok, extraction_total,
-                                   dedup_hits, detail)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                   dedup_hits, proxy_key, detail)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (source["id"], now, result["http_status"], result["result"],
              result["new_articles"], result["extraction_ok"],
-             result["extraction_total"], result["dedup_hits"], result["detail"]),
+             result["extraction_total"], result["dedup_hits"],
+             proxy_key, result["detail"]),
         )

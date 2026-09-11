@@ -29,6 +29,12 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     init_db(settings.db_path)
     n = load_seed_sources(settings.db_path, BASE_DIR / "sources")
     logging.getLogger("gnr").info("loaded %s seed sources", n)
+    # BYO 代理：config/proxies.yaml → DB（示例文件不导入）
+    from .pipeline import utcnow
+    from .proxyconf import sync_proxy_config
+    imported = sync_proxy_config(settings.db_path, settings.proxy_config, utcnow())
+    if imported:
+        logging.getLogger("gnr").info("imported %s proxy profiles", imported)
 
     stop_event = asyncio.Event()
     task = None

@@ -3,22 +3,37 @@
 {% block content %}
 <h1>媒体源状态看板</h1>
 
-{% set restricted = sources | selectattr("geo_status", "equalto", "geo_restricted") | list %}
-{% if restricted %}
-<h2>⚠ 地域受限源（{{ restricted | length }}）</h2>
-{% for s in restricted %}
+{% set flagged = sources | selectattr("geo_status", "in", ["geo_restricted", "geo_suspected"]) | list %}
+{% if flagged %}
+<h2>⚠ 地域受限/疑似受限源（{{ flagged | length }}）</h2>
+{% for s in flagged %}
 <div class="hint-box">
-  <strong>{{ s.name }}</strong>（{{ s.country|upper }}）<br>
+  <strong>{{ s.name }}</strong>（{{ s.country|upper }}）
+  <span class="badge {{ s.geo_status }}">{{ s.geo_status }}</span><br>
   {{ s.hint }}
+  {% if s.bound_proxy %}<br><span class="muted">已绑定出口：{{ s.bound_proxy }}</span>{% endif %}
 </div>
 {% endfor %}
 {% else %}
 <p class="muted">当前没有检测到地域受限的媒体源。</p>
 {% endif %}
 
+{% if geo_hints %}
+<h2>待处理提示（{{ geo_hints | length }}）</h2>
+<table>
+  <tr><th>媒体</th><th>所需地域</th><th>状态</th><th>证据</th><th>时间</th></tr>
+  {% for h in geo_hints %}
+  <tr><td>{{ h.source_name }}</td><td>{{ (h.required_region or "—")|upper }}</td>
+      <td><span class="badge {{ h.status }}">{{ h.status }}</span></td>
+      <td class="muted">{{ h.evidence }}</td>
+      <td class="muted">{{ h.created_at }}</td></tr>
+  {% endfor %}
+</table>
+{% endif %}
+
 <h2>全部源（{{ sources | length }}）</h2>
 <table>
-  <tr><th>媒体</th><th>国家</th><th>语种</th><th>状态</th><th>轮询间隔</th>
+  <tr><th>媒体</th><th>国家</th><th>语种</th><th>状态</th><th>代理</th><th>轮询间隔</th>
       <th>文章数</th><th>最近抓取</th></tr>
   {% for s in sources %}
   <tr>
@@ -26,6 +41,7 @@
     <td>{{ s.country|upper }}</td>
     <td>{{ s.language }}</td>
     <td><span class="badge {{ s.geo_status }}">{{ s.geo_status }}</span></td>
+    <td class="muted">{{ s.bound_proxy or "直连" }}</td>
     <td>{{ s.interval_minutes }} 分钟</td>
     <td>{{ s.article_count }}</td>
     <td class="muted">{{ s.last_fetched_at or "未抓取" }}</td>
@@ -33,23 +49,21 @@
   {% endfor %}
 </table>
 
-<h2>地域代理配置（只读展示）</h2>
+<h2>地域代理配置</h2>
 <p class="muted">
   本项目采用 BYO Proxy 模式：系统只检测与提示，不分发、不内置任何代理资源，
-  也不会静默切换代理。需要为受限源配置出口时，请复制
-  <code>config/proxies.example.yaml</code> 为 <code>config/proxies.yaml</code>
-  并按国家/源绑定您自己的代理；绑定解析优先级为 源级 &gt; 国家级 &gt; 全局。
+  也不会静默切换代理。代理配置可通过 <code>config/proxies.yaml</code>
+  或 REST API（<code>/api/v1/proxy-profiles</code>、<code>/api/v1/proxy-bindings</code>）
+  维护；绑定解析优先级为 源级 &gt; 国家级 &gt; 全局。
   是否经代理访问地域受限内容，由您自行决定并承担相应合规责任。
 </p>
-{% if proxy_cfg.is_example %}
-<p class="muted">当前展示的是示例配置（{{ proxy_cfg.path }}）。</p>
-{% endif %}
 <h3>代理出口 profiles（{{ proxy_cfg.profiles | length }}）</h3>
 <table>
-  <tr><th>ID</th><th>类型</th><th>出口国家</th><th>接入点</th><th>备注</th></tr>
+  <tr><th>ID</th><th>类型</th><th>出口国家</th><th>接入点</th><th>凭据</th><th>备注</th></tr>
   {% for p in proxy_cfg.profiles %}
-  <tr><td>{{ p.profile_id }}</td><td>{{ p.type }}</td>
+  <tr><td>{{ p.profile_key }}</td><td>{{ p.type }}</td>
       <td>{{ p.country|upper }}</td><td>{{ p.endpoint }}</td>
+      <td>{{ "env:" ~ p.credentials_env if p.credentials_env else "—" }}</td>
       <td class="muted">{{ p.notes }}</td></tr>
   {% endfor %}
 </table>
@@ -58,8 +72,8 @@
   <tr><th>范围</th><th>对象</th><th>使用出口</th><th>优先级</th></tr>
   {% for b in proxy_cfg.bindings %}
   <tr><td>{{ b.scope }}</td>
-      <td>{{ b.source or b.country or "（全局）" }}</td>
-      <td>{{ b.profile_id }}</td><td>{{ b.priority }}</td></tr>
+      <td>{{ b.source_key or b.country_code or "（全局）" }}</td>
+      <td>{{ b.profile_key }}</td><td>{{ b.priority }}</td></tr>
   {% endfor %}
 </table>
 {% endblock %}
