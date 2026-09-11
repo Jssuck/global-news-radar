@@ -70,7 +70,7 @@ Since v0.1.0 the single-process app has gained: three-level proxy bindings (sour
 | M1 Crawling Core | seed registry, scheduler, RSS/sitemap fetching, rule cleaning | ✅ done — 440 sources onboarded, extraction success 95.8% |
 | M2 Geo & LLM Pipeline | geo-block detection + proxy hints, LLM cleaning & organization | 🚧 implemented — golden-set geo accuracy + 72h metrics pending |
 | M3 Full-stack App | dashboard, auth + approval, REST API v1 | 🚧 35 endpoints live (incl. SSE); contract tests pending |
-| M4 Hardening & v1.0 | observability, docs, release | v1.0.0 tagged |
+| M4 Hardening & v1.0 | observability, docs, release | 🚧 code-ready — contract tests, fault injection, Dockerfile, security scan landed; 72h/1000-source live measurement + deploy rehearsal pending |
 
 Acceptance criteria and gate reviews are enforced per [docs/harness/](docs/harness/).
 

@@ -119,3 +119,23 @@
 ```
 
 签字记录随仓库存档、永不可修改（纠错须追加新记录），作为里程碑达成的唯一正式凭据。
+
+---
+
+## 附录 B · M4 硬化落地记录（2026-09-11）
+
+| 项 | 状态 | 证据 |
+|---|---|---|
+| M3-F1 契约测试 | ✅ | `tests/test_contract.py`：37 端点全注册 OpenAPI、无参 GET 可达、列表端点 total/items 契约 |
+| M3-F2 六迁移路径 | ✅ | `test_state_machine_six_paths` + open/invite 两档模式 + 终态保护 |
+| M3-F5 分级限流 | ✅ | `test_rate_limit_tiers`：标准档 429+Retry-After+X-RateLimit-*，API Key 档独立 |
+| M3-F6 四角色/即时吊销 | ✅ | `test_suspend_revokes_sessions_and_keys`、`test_api_caller_no_web_session`、`test_audit_logs_written` |
+| M3-F4 GDELT 漏抓对照 | ✅ 代码 | `gdelt_checks` 表 + 每日后台比对 + `/gdelt-checks`（连续性待 7 天运行窗口） |
+| M2-F1 geo 黄金集 | ✅ | `tests/fixtures/geo_golden.json` 54 样本 + ≥95% 准确率/429-5xx 零误判回归门 |
+| M4-F2 故障注入 | ✅ 代码 | `tests/test_fault_injection.py`：LLM 宕机→DLQ、organize 失败→占位、单源异常隔离；72h 零 P0 待运行窗口 |
+| M4-F3 安全扫描 | ✅ | `scripts/security_scan.py`：密钥 0 命中、许可证 44 包 0 高危（socksio MIT 已人工核实覆盖） |
+| M4-F4 部署 | 🚧 | `Dockerfile`+`docker-compose.yml`+`docs/deploy.md` 就绪；镜像构建与 30min 演练待执行（docker daemon 未启动） |
+| M4-F5 发布 | 🚧 | `docs/release-notes-v1.0-draft.md` 就绪；tag 待 M4-F1/F2 实测窗口完成后执行 |
+| M4-F1 千源/72h | ⏳ | 需真实运行窗口与源扩充（443→1000），不可离线代测 |
+| M3-N2 贡献文档 | ✅ | `docs/community/source-request.md` + YAML 模板 + 合规红线 |
+| M4-N1 三套文档 | ✅ | `docs/deploy.md`/`operations.md`/`community/source-request.md` |
