@@ -36,6 +36,12 @@ class Settings:
     llm_timeout: float
     llm_max_tokens: int         # 单次调用输出上限（成本控制）
     gdelt_timespan: str         # 受限降级聚合层回看窗口
+    embed_base_url: str | None  # OpenAI 兼容 /embeddings 端点，None=聚类关闭
+    embed_model: str
+    embed_api_key_env: str | None
+    organize_interval: int      # 聚类/事件整理循环间隔（秒）
+    render_enabled: bool        # 渲染兜底总开关（Playwright 可选依赖）
+    render_daily_budget: int    # 每日渲染次数上限（设计：渲染占比 ≤15%）
     user_agent: str = "GlobalNewsRadar-MVP/0.1 (+https://github.com/Jssuck/global-news-radar)"
 
 
@@ -58,4 +64,10 @@ def get_settings() -> Settings:
         llm_timeout=float(env.get("GNR_LLM_TIMEOUT", "60")),
         llm_max_tokens=int(env.get("GNR_LLM_MAX_TOKENS", "2048")),
         gdelt_timespan=env.get("GNR_GDELT_TIMESPAN", "24h"),
+        embed_base_url=env.get("GNR_EMBED_BASE_URL"),
+        embed_model=env.get("GNR_EMBED_MODEL", "bge-m3"),
+        embed_api_key_env=env.get("GNR_EMBED_API_KEY_ENV"),
+        organize_interval=int(env.get("GNR_ORGANIZE_INTERVAL", "300")),
+        render_enabled=env.get("GNR_RENDER_ENABLED", "0") == "1",
+        render_daily_budget=int(env.get("GNR_RENDER_DAILY_BUDGET", "500")),
     )

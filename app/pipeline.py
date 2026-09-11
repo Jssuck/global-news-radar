@@ -29,6 +29,7 @@ from .geo import (
 )
 from .llm import gate1_fail_reasons, llm_clean_article, provider_from_settings
 from .proxyconf import alt_country_profile, proxy_url, resolve_proxy
+from .renderer import budget_ok, render_fetch
 from .robots import default_robots_cache
 
 log = logging.getLogger("gnr.pipeline")
@@ -215,11 +216,20 @@ async def fetch_source(db_path: str, source: dict, settings,
                        verdict.reason, now, confirmed=False)
             _finalize(db_path, source, result, now, proxy_key=proxy_key)
             return result
+        used_render = False
         if verdict.verdict == "anti_bot":
-            result["result"] = "anti_bot"
-            result["detail"] = verdict.reason
-            _finalize(db_path, source, result, now, proxy_key=proxy_key)
-            return result
+            # 渲染兜底：仅 anti_bot 判定且启用渲染、预算未耗尽时尝试
+            rendered = await _try_rendered_feed(
+                db_path, client_factory, settings, source, endpoint,
+                bound_proxy)
+            if rendered is not None:
+                resp = rendered  # 复用下方 200/feed 解析路径
+                used_render = True
+            else:
+                result["result"] = "anti_bot"
+                result["detail"] = verdict.reason
+                _finalize(db_path, source, result, now, proxy_key=proxy_key)
+                return result
 
         # 3) 304 未变更：零成本跳过
         if resp.status_code == 304:
@@ -239,6 +249,8 @@ async def fetch_source(db_path: str, source: dict, settings,
         outcome = await _process_candidates(
             db_path, client, source, candidates, result, now,
             settings, robots, limiter, llm_provider)
+        if used_render and outcome == "ok":
+            result["result"] = "rendered"  # 渲染兜底成功，预算计数口径
 
         # 5) 成功一轮：更新条件 GET 凭据，恢复 geo_status=ok
         if outcome == "ok":
@@ -248,6 +260,31 @@ async def fetch_source(db_path: str, source: dict, settings,
                   last_modified=resp.headers.get("Last-Modified") if outcome == "ok" else None,
                   proxy_key=proxy_key)
         return result
+
+
+async def _try_rendered_feed(db_path: str, client_factory, settings,
+                             source: dict, endpoint: str,
+                             bound_proxy: str | None):
+    """渲染兜底：anti_bot 源经无头浏览器取回 feed 响应对象；失败返回 None。
+
+    返回包装为带 .status_code/.text/.url 的轻量对象以复用后续解析路径。
+    受 render_enabled 开关与每日预算双重约束（设计：渲染占比 ≤15%）。
+    """
+    if not (settings.render_enabled and budget_ok(db_path, settings)):
+        return None
+    html = await render_fetch(endpoint, settings, proxy=bound_proxy)
+    if not html:
+        return None
+
+    class _RenderedResp:
+        status_code = 200
+        url = endpoint
+
+        def __init__(self, text: str) -> None:
+            self.text = text
+            self.headers: dict = {}
+
+    return _RenderedResp(html)
 
 
 async def _confirm_if_suspected(db_path: str, client_factory, settings,

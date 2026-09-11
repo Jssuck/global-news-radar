@@ -14,6 +14,7 @@ from fastapi import FastAPI
 from .api import router as api_router
 from .config import BASE_DIR, get_settings
 from .db import init_db
+from .events import organize_cycle
 from .pages import router as pages_router
 from .poller import poll_loop
 from .sources_loader import load_seed_sources
@@ -37,13 +38,33 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         logging.getLogger("gnr").info("imported %s proxy profiles", imported)
 
     stop_event = asyncio.Event()
-    task = None
+    tasks: list[asyncio.Task] = []
     if not settings.disable_poller:
-        task = asyncio.create_task(poll_loop(settings.db_path, settings, stop_event))
+        tasks.append(asyncio.create_task(
+            poll_loop(settings.db_path, settings, stop_event)))
+        tasks.append(asyncio.create_task(
+            _organize_loop(settings, stop_event)))
     yield
     stop_event.set()
-    if task:
+    for task in tasks:
         await task
+
+
+async def _organize_loop(settings, stop_event: asyncio.Event) -> None:
+    """embedding 聚类 + 事件整理后台循环（GNR_ORGANIZE_INTERVAL，默认 5min）。"""
+    log = logging.getLogger("gnr.organize")
+    while not stop_event.is_set():
+        try:
+            counts = await organize_cycle(settings.db_path, settings)
+            if any(counts.values()):
+                log.info("organize cycle: %s", counts)
+        except Exception:  # 后台任务异常不中断服务
+            log.exception("organize cycle failed")
+        try:
+            await asyncio.wait_for(stop_event.wait(),
+                                   timeout=settings.organize_interval)
+        except TimeoutError:
+            pass
 
 
 app = FastAPI(
