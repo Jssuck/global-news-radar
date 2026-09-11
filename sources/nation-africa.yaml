@@ -14,3 +14,8 @@ update_profile:
 legal:
   robots_checked: true
 maintainers: []
+triage:
+  verdict: inconclusive
+  evidence: "feed 404 且未发现可用 sitemap（2026-09-11 复测）；待 html_list 再发现，保持 active"
+  date: '2026-09-11'
+  revisit: manual

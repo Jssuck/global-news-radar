@@ -52,3 +52,19 @@
 - 结论投票：自动门禁 PASS（gate_check exit 0）；maintainer @Jssuck 复核分诊证据后签字
 - 下一阶段开启时间：M2 于本报告公示期满且无异议后开启（M2 范围含：Playwright 渲染抓取以恢复 15 个 anti_bot 源、html_list/aggregator 发现层、WebSub 接入）
 - 备注：本里程碑验证了平台核心假设——从数据中心出口无代理直连全球主流媒体，约 84~91% 可合规直连；8% 需要 JS 渲染或区域代理，与 v1.0 设计的 BYO 代理 + geo 提示架构判断一致
+
+## 附录 A:inconclusive 源复测（2026-09-11，出口恢复后）
+
+按第 3 节遗留承诺，在健康出口（实测 github.com/各目标站均正常）下对全库 443 源重跑 `verify_feed.py`:**416/443 ok(93.9%)**;http_fail 12、stale 9、error 5、parse_fail 1。原 31 个 inconclusive 源全部恢复可达，证实当时失败为沙箱出口劣化所致。分诊口径维持 0.9107,复测结果未跌破 0.85 门槛，M1 结论 PASS 不变。
+
+复测新增处置（已回写 `sources/*.yaml`):
+
+| 类别 | 源 | 处置 |
+|---|---|---|
+| feed 404 → 有可用 sitemap | bolnews-com、kompas-com、tribune-com-pk | `discovery.strategy` 降级为 sitemap(三级降级链的种库级体现);tribune 用 robots.txt 声明的 news sitemap |
+| feed/robots 403 | abs-cbn-com(Akamai deny)、lebanonfiles-com、mindanews-com、thewhistler-ng(Cloudflare 挑战保护 robots.txt) | 保守规则 robots 不可读即视为禁止 → `blocked_legal`,`active: false`,revisit manual |
+| feed 404 且无 sitemap | thejakartapost-com、nation-africa | `inconclusive`,保持 active，待 html_list 再发现（发现层第三级，M2 范围） |
+| feed 200 但 >7d 未更新（stale) | aps-sn、daily-mail-co-zm、ethiopia-insight-com、ethiopianmonitor-com、newbusinessethiopia-com、nhk-world、orda-kz、globaltimes-cn、thedailystar-net | 后两者原已停用；其余保持 active,stale 多为低频更新或 feed 半弃用，由运行时自适应轮询兜底 |
+| SSL/超时 | detik-com、japan-news-yomiuri-co-jp、nld-com-vn | 保持 active，下轮复测 |
+| html_list 策略（verify_feed 不适用) | china-daily、peoples-daily | M1 范围外，未入库 |
+

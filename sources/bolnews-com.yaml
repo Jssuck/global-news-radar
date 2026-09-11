@@ -5,8 +5,8 @@ language: ur
 media_type: tv
 influence_tier: major
 discovery:
-  strategy: rss
-  feed_url: "https://bolnews.com/rss"
+  strategy: sitemap
+  sitemap_url: "https://bolnews.com/sitemap.xml"
 geo:
   status: ok
 update_profile:

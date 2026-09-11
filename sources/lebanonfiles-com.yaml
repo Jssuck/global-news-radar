@@ -14,3 +14,9 @@ update_profile:
 legal:
   robots_checked: true
 maintainers: []
+active: false
+triage:
+  verdict: blocked_legal
+  evidence: "robots.txt 返回 403/挑战页，无法确认抓取许可（2026-09-11 复测）；保守规则按全禁处理"
+  date: '2026-09-11'
+  revisit: manual
