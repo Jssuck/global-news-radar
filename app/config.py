@@ -42,6 +42,8 @@ class Settings:
     organize_interval: int      # 聚类/事件整理循环间隔（秒）
     render_enabled: bool        # 渲染兜底总开关（Playwright 可选依赖）
     render_daily_budget: int    # 每日渲染次数上限（设计：渲染占比 ≤15%）
+    auth_required: bool         # 多用户模式：写操作与敏感读需登录（默认自托管免登）
+    rate_limit_per_min: int     # API 限流（令牌桶，按 key/IP）
     user_agent: str = "GlobalNewsRadar-MVP/0.1 (+https://github.com/Jssuck/global-news-radar)"
 
 
@@ -70,4 +72,6 @@ def get_settings() -> Settings:
         organize_interval=int(env.get("GNR_ORGANIZE_INTERVAL", "300")),
         render_enabled=env.get("GNR_RENDER_ENABLED", "0") == "1",
         render_daily_budget=int(env.get("GNR_RENDER_DAILY_BUDGET", "500")),
+        auth_required=env.get("GNR_AUTH_REQUIRED", "0") == "1",
+        rate_limit_per_min=int(env.get("GNR_RATE_LIMIT_PER_MIN", "120")),
     )

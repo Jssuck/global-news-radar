@@ -9,9 +9,11 @@ import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 
 from .api import router as api_router
+from .auth import RateLimiter, rate_limit_key
 from .config import BASE_DIR, get_settings
 from .db import init_db
 from .events import organize_cycle
@@ -73,5 +75,20 @@ app = FastAPI(
     version="0.1.0",
     lifespan=lifespan,
 )
+
+
+@app.middleware("http")
+async def rate_limit_middleware(request: Request, call_next):
+    """API 令牌桶限流（按 api_key/IP）；/api/v1/* 生效，默认 120 req/min。"""
+    if request.url.path.startswith("/api/v1/"):
+        limiter = getattr(request.app.state, "rate_limiter", None)
+        if limiter is None:
+            limiter = RateLimiter(request.app.state.settings.rate_limit_per_min)
+            request.app.state.rate_limiter = limiter
+        if not limiter.allow(rate_limit_key(request)):
+            return JSONResponse({"detail": "请求过于频繁"}, status_code=429)
+    return await call_next(request)
+
+
 app.include_router(api_router)
 app.include_router(pages_router)

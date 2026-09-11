@@ -139,11 +139,53 @@ CREATE TABLE IF NOT EXISTS article_embeddings (
     created_at TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    email TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,          -- PBKDF2-HMAC-SHA256 salt$hex
+    role TEXT NOT NULL DEFAULT 'viewer',  -- admin | editor | viewer（RBAC）
+    status TEXT NOT NULL DEFAULT 'pending',  -- pending | approved | rejected（注册审核三态）
+    invite_code TEXT,
+    created_at TEXT NOT NULL,
+    decided_at TEXT,
+    decided_by INTEGER REFERENCES users(id)
+);
+
+CREATE TABLE IF NOT EXISTS sessions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES users(id),
+    token_hash TEXT NOT NULL UNIQUE,      -- SHA-256(session token)，不落明文
+    created_at TEXT NOT NULL,
+    expires_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS api_keys (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES users(id),
+    key_hash TEXT NOT NULL UNIQUE,        -- SHA-256(api key)，不落明文
+    name TEXT NOT NULL,
+    scopes TEXT NOT NULL DEFAULT 'read',  -- 逗号分隔：read | write | admin
+    created_at TEXT NOT NULL,
+    revoked_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS invite_codes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    code TEXT NOT NULL UNIQUE,
+    max_uses INTEGER NOT NULL DEFAULT 1,
+    used_count INTEGER NOT NULL DEFAULT 0,
+    created_by INTEGER REFERENCES users(id),
+    created_at TEXT NOT NULL,
+    expires_at TEXT
+);
+
 CREATE INDEX IF NOT EXISTS idx_articles_source ON articles(source_id);
 CREATE INDEX IF NOT EXISTS idx_fetch_log_source ON fetch_log(source_id);
 CREATE INDEX IF NOT EXISTS idx_geo_hints_source ON geo_hints(source_id);
 CREATE INDEX IF NOT EXISTS idx_proxy_bindings_scope ON proxy_bindings(scope);
 CREATE INDEX IF NOT EXISTS idx_dead_letters_status ON dead_letters(status);
+CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions(token_hash);
+CREATE INDEX IF NOT EXISTS idx_api_keys_hash ON api_keys(key_hash);
 """
 
 # 写操作串行化锁（单进程 MVP，避免并发写 SQLite 报 database is locked）

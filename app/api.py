@@ -5,16 +5,45 @@
 """
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException, Query, Request
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from . import metrics
+from .auth import (
+    SESSION_COOKIE,
+    Principal,
+    create_api_key,
+    create_invite,
+    current_principal,
+    decide_registration,
+    login_user,
+    logout,
+    register_user,
+    require_admin,
+    revoke_api_key,
+    set_user_role,
+)
 from .db import WRITE_LOCK, connect
 from .geo import geo_hint
 from .pipeline import fetch_source, utcnow
 from .proxyconf import create_binding, create_profile
 
 router = APIRouter(prefix="/api/v1", tags=["v1"])
+
+
+def guard(request: Request, action: str) -> Principal | None:
+    """写操作权限门：auth_required 开启时校验 RBAC 动作；自托管模式放行。"""
+    if not request.app.state.settings.auth_required:
+        return None
+    p = current_principal(request)
+    if not p:
+        raise HTTPException(status_code=401, detail="未认证")
+    if not p.can(action):
+        raise HTTPException(status_code=403, detail="权限不足")
+    return p
 
 
 def _source_dict(row) -> dict:
@@ -110,6 +139,7 @@ def get_article(request: Request, article_id: int):
 @router.post("/sources/{source_id}/check")
 async def check_source(request: Request, source_id: int):
     """手动触发一次抓取（用于调试与新源验证）。"""
+    guard(request, "write")
     settings = request.app.state.settings
     with connect(settings.db_path) as conn:
         row = conn.execute("SELECT * FROM sources WHERE id = ?",
@@ -156,6 +186,7 @@ def list_geo_hints(request: Request, status: str | None = None,
 @router.post("/geo-hints/{hint_id}/resolve")
 def resolve_geo_hint(request: Request, hint_id: int):
     """标记提示已处理（用户配置代理后联动）；源恢复待复检状态。"""
+    guard(request, "hint:resolve")
     now = utcnow()
     with WRITE_LOCK, connect(request.app.state.settings.db_path) as conn:
         hint = conn.execute("SELECT * FROM geo_hints WHERE id = ?",
@@ -203,6 +234,7 @@ def list_proxy_profiles(request: Request):
 @router.post("/proxy-profiles", status_code=201)
 def add_proxy_profile(request: Request, payload: ProxyProfileIn):
     """创建代理配置（BYO）；profile_key 重复返回 409。"""
+    guard(request, "write")
     with connect(request.app.state.settings.db_path) as conn:
         dup = conn.execute("SELECT 1 FROM proxy_profiles WHERE profile_key = ?",
                            (payload.profile_key,)).fetchone()
@@ -219,6 +251,7 @@ def add_proxy_profile(request: Request, payload: ProxyProfileIn):
 @router.delete("/proxy-profiles/{profile_id}")
 def delete_proxy_profile(request: Request, profile_id: int):
     """删除代理配置；仍有绑定引用时 409 拒绝（级联检查）。"""
+    guard(request, "write")
     with WRITE_LOCK, connect(request.app.state.settings.db_path) as conn:
         bound = conn.execute(
             "SELECT COUNT(*) FROM proxy_bindings WHERE proxy_profile_id = ?",
@@ -261,6 +294,7 @@ def list_proxy_bindings(request: Request):
 @router.post("/proxy-bindings", status_code=201)
 def add_proxy_binding(request: Request, payload: ProxyBindingIn):
     """创建绑定（scope 必填字段与 profile 存在性校验）。"""
+    guard(request, "write")
     try:
         return create_binding(request.app.state.settings.db_path,
                               payload.model_dump(), utcnow())
@@ -270,6 +304,7 @@ def add_proxy_binding(request: Request, payload: ProxyBindingIn):
 
 @router.delete("/proxy-bindings/{binding_id}")
 def delete_proxy_binding(request: Request, binding_id: int):
+    guard(request, "write")
     with WRITE_LOCK, connect(request.app.state.settings.db_path) as conn:
         cur = conn.execute("DELETE FROM proxy_bindings WHERE id = ?",
                            (binding_id,))
@@ -310,3 +345,179 @@ def stats(request: Request):
         "rss_discovery_total": disc_total,
         "dedup_hits": dedup,
     }
+
+
+# ---- M3a：认证 / 注册审核 / 邀请码 / API Key ----
+
+
+class RegisterIn(BaseModel):
+    email: str = Field(min_length=3, max_length=254)
+    password: str = Field(min_length=8, max_length=128)
+    invite_code: str | None = None
+
+
+class LoginIn(BaseModel):
+    email: str
+    password: str
+
+
+@router.post("/auth/register", status_code=201)
+def register(request: Request, payload: RegisterIn):
+    """注册：首位用户直升 admin+approved（自托管引导），其余进 pending 待审。"""
+    try:
+        user = register_user(request.app.state.settings.db_path,
+                             payload.email, payload.password,
+                             payload.invite_code, utcnow())
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return {"id": user["id"], "email": user["email"],
+            "status": user["status"], "role": user["role"]}
+
+
+@router.post("/auth/login")
+def login(request: Request, payload: LoginIn):
+    """登录：仅 approved 用户可签发 session；HttpOnly cookie 返回。"""
+    result = login_user(request.app.state.settings.db_path,
+                        payload.email, payload.password, utcnow())
+    if not result:
+        raise HTTPException(status_code=401,
+                            detail="凭证无效或账号未通过审核")
+    token, user = result
+    resp = JSONResponse({"id": user["id"], "email": user["email"],
+                         "role": user["role"]})
+    resp.set_cookie(SESSION_COOKIE, token, httponly=True, samesite="lax",
+                    max_age=7 * 24 * 3600)
+    return resp
+
+
+@router.post("/auth/logout")
+def do_logout(request: Request):
+    token = request.cookies.get(SESSION_COOKIE)
+    if token:
+        logout(request.app.state.settings.db_path, token)
+    resp = JSONResponse({"ok": True})
+    resp.delete_cookie(SESSION_COOKIE)
+    return resp
+
+
+@router.get("/auth/me")
+def me(request: Request):
+    p = current_principal(request)
+    if not p:
+        raise HTTPException(status_code=401, detail="未认证")
+    return {"id": p.user["id"], "email": p.user["email"],
+            "role": p.user["role"], "via": p.via, "scopes": p.scopes}
+
+
+@router.get("/admin/registrations")
+def list_registrations(request: Request,
+                       _admin: Annotated[Principal, Depends(require_admin)],
+                       status: str = "pending"):
+    """注册审核队列（admin）：按状态过滤。"""
+    with connect(request.app.state.settings.db_path) as conn:
+        rows = conn.execute(
+            "SELECT id, email, status, invite_code, created_at, decided_at"
+            " FROM users WHERE status=? ORDER BY created_at", (status,)
+        ).fetchall()
+    return {"total": len(rows), "items": [dict(r) for r in rows]}
+
+
+@router.post("/admin/registrations/{user_id}/approve")
+def approve_registration(request: Request, user_id: int,
+                         _admin: Annotated[Principal, Depends(require_admin)]):
+    try:
+        return decide_registration(request.app.state.settings.db_path,
+                                   user_id, True, _admin.user["id"], utcnow())
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+
+@router.post("/admin/registrations/{user_id}/reject")
+def reject_registration(request: Request, user_id: int,
+                        _admin: Annotated[Principal, Depends(require_admin)]):
+    try:
+        return decide_registration(request.app.state.settings.db_path,
+                                   user_id, False, _admin.user["id"], utcnow())
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+
+class InviteIn(BaseModel):
+    code: str = Field(min_length=4, max_length=64)
+    max_uses: int = Field(default=1, ge=1, le=1000)
+    expires_at: str | None = None
+
+
+@router.post("/admin/invite-codes", status_code=201)
+def add_invite(request: Request, payload: InviteIn,
+               _admin: Annotated[Principal, Depends(require_admin)]):
+    try:
+        return create_invite(request.app.state.settings.db_path,
+                             payload.code, payload.max_uses,
+                             _admin.user["id"], utcnow(), payload.expires_at)
+    except Exception as exc:
+        raise HTTPException(status_code=409,
+                            detail=f"邀请码创建失败: {exc}") from exc
+
+
+@router.get("/admin/invite-codes")
+def list_invites(request: Request, _admin: Annotated[Principal, Depends(require_admin)]):
+    with connect(request.app.state.settings.db_path) as conn:
+        rows = conn.execute(
+            "SELECT * FROM invite_codes ORDER BY id DESC").fetchall()
+    return {"total": len(rows), "items": [dict(r) for r in rows]}
+
+
+class RoleIn(BaseModel):
+    role: str = Field(pattern="^(admin|editor|viewer)$")
+
+
+@router.patch("/admin/users/{user_id}/role")
+def change_role(request: Request, user_id: int, payload: RoleIn,
+                _admin: Annotated[Principal, Depends(require_admin)]):
+    try:
+        set_user_role(request.app.state.settings.db_path, user_id,
+                      payload.role)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return {"id": user_id, "role": payload.role}
+
+
+class ApiKeyIn(BaseModel):
+    name: str = Field(min_length=1, max_length=64)
+    scopes: str = Field(default="read", pattern="^[a-z,]+$")
+
+
+@router.post("/api-keys", status_code=201)
+def add_api_key(request: Request, payload: ApiKeyIn):
+    """签发 API Key：明文仅本次返回，库中只存摘要。"""
+    p = require_user_or_401(request)
+    key = create_api_key(request.app.state.settings.db_path, p.user["id"],
+                         payload.name, payload.scopes, utcnow())
+    return {"api_key": key, "name": payload.name, "scopes": payload.scopes}
+
+
+@router.get("/api-keys")
+def list_api_keys(request: Request):
+    p = require_user_or_401(request)
+    with connect(request.app.state.settings.db_path) as conn:
+        rows = conn.execute(
+            "SELECT id, name, scopes, created_at, revoked_at FROM api_keys"
+            " WHERE user_id=? ORDER BY id DESC", (p.user["id"],)).fetchall()
+    return {"total": len(rows), "items": [dict(r) for r in rows]}
+
+
+@router.delete("/api-keys/{key_id}")
+def del_api_key(request: Request, key_id: int):
+    p = require_user_or_401(request)
+    if not revoke_api_key(request.app.state.settings.db_path, key_id,
+                          p.user["id"], utcnow()):
+        raise HTTPException(status_code=404, detail="Key 不存在")
+    return {"revoked": key_id}
+
+
+def require_user_or_401(request: Request) -> Principal:
+    p = current_principal(request)
+    if not p:
+        raise HTTPException(status_code=401, detail="未认证")
+    return p
