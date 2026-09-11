@@ -58,14 +58,14 @@ Full design: [docs/design/design-v1.0.md](docs/design/design-v1.0.md)
 
 ## Project Status
 
-**Incubating — pre-M1.** The v1.0 design is finalized; the crawling core is under active development. See the roadmap below and the [MVP branch](https://github.com/Jssuck/global-news-radar/tree/mvp) for a minimal working prototype.
+**Incubating — M1 done, M2 in progress.** The v1.0 design is finalized and the crawling core is on `main`: 443 seed sources (60+ countries, 40+ languages), RSS→sitemap discovery cascade, robots.txt compliance, per-host politeness, adaptive polling, and the trafilatura fallback chain — see the [M1 gate report](docs/harness/gate-reports/m1-gate-report.md) (PASS). A minimal end-to-end prototype also lives on the [`mvp` branch](https://github.com/Jssuck/global-news-radar/tree/mvp).
 
 ### Roadmap
 
 | Milestone | Scope | Target |
 |---|---|---|
 | M0 Bootstrap | repo, governance, CI, harness docs | — (done) |
-| M1 Crawling Core | seed registry, scheduler, RSS/sitemap fetching, rule cleaning | 300 sources onboarded, extraction success ≥90% |
+| M1 Crawling Core | seed registry, scheduler, RSS/sitemap fetching, rule cleaning | ✅ done — 440 sources onboarded, extraction success 95.8% |
 | M2 Geo & LLM Pipeline | geo-block detection + proxy hints, LLM cleaning & organization | geo verdict accuracy ≥90% on golden set |
 | M3 Full-stack App | dashboard, auth + approval, REST API v1 | 27 endpoints live |
 | M4 Hardening & v1.0 | observability, docs, release | v1.0.0 tagged |

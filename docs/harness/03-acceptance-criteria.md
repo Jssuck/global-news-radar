@@ -40,6 +40,8 @@
 | M1-N2 | 质量门 1 判负率监控与 10–20% 告警带已上线（M2 成本阀门的前置） | 非功能/必须 | 看板截图 + 告警配置 |
 | M1-N3 | 调度器、四级降级、清洗管线的开发者文档与接口注释同步 | 非功能/必须 | 文档 PR 记录 |
 
+**M1 门禁执行口径（2026-08-25 Gate Review 实际采用）**：单人维护阶段由 `scripts/collect_metrics.py` + `gate_check.py` 自动化裁决，指标键与实测结论见 `docs/harness/gate-reports/m1-gate-report.md`。条目映射：`M1-F1` → `sources_onboarded ≥300` + `rss_discovery_rate ≥0.85`；`M1-F2` → `extraction_success ≥0.90`（全量抓取计数口径，替代标注集口径）；`M1-F4` → `dedup_hits` 对照观测；另有 `coverage ≥0.80`（非 critical）与「测试全量通过 + ruff 零告警」。`M1-F3`/`M1-F5`/`M1-F6` 由代码审查与分诊记录人工核对。里程碑窗口期出口网络劣化导致的 31 个 inconclusive 源按遗留承诺复测。
+
 ## 3. M2 地域代理 + LLM 管线（W7–W10）
 
 交付物：受限信号判定规则表 + `geo_status` 写回、三级代理绑定路由、受限降级模式与提示生成 API、Playwright 渲染 worker 小池、第二级 LLM 清洗（LiteLLM + JSON Schema 闸门 + 死信队列）、embedding 两遍 KNN 聚类、第三级 LLM 事件整理。

@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-09-11
+
 ### Added
 - M0 筹备完成：仓库结构、MIT LICENSE、NOTICE、治理文件（CONTRIBUTING / CODE_OF_CONDUCT / SECURITY）
 - 项目总体设计文档 v1.0（docs/design/design-v1.0.md）
