@@ -22,7 +22,13 @@
              font-size: 12px; }
     .ok { background: #e2f4e5; color: #217a35; }
     .geo_restricted { background: #fde8e8; color: #b42318; }
+    .geo_suspected, .suspected, .open { background: #fef3c7; color: #92400e; }
+    .resolved, .rendered { background: #e0ecff; color: #1d4ed8; }
     .unknown { background: #eef0f2; color: #666; }
+    input, select { padding: 5px 8px; margin: 2px 4px 2px 0;
+                    border: 1px solid #d5d9df; border-radius: 6px; }
+    button { padding: 5px 12px; border: 1px solid #1a3a5c; background: #1a3a5c;
+             color: #fff; border-radius: 6px; cursor: pointer; font-size: 13px; }
     .hint-box { background: #fff7ed; border: 1px solid #fed7aa;
                 border-radius: 8px; padding: 10px 14px; margin: 8px 0;
                 font-size: 14px; }
@@ -34,7 +40,9 @@
   <span class="brand">Global News Radar</span>
   <a href="/">新闻流</a>
   <a href="/sources">源看板</a>
+  <a href="/admin">审核台</a>
   <a href="/docs">API 文档</a>
+  <a href="/login" style="margin-left:auto">登录</a>
 </header>
 <main>
 {% block content %}{% endblock %}

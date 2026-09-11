@@ -20,8 +20,9 @@ def index(request: Request):
     with connect(request.app.state.settings.db_path) as conn:
         articles = conn.execute(
             """
-            SELECT a.id, a.title, a.summary, a.url, a.language,
-                   a.published_at, a.fetched_at, s.name AS source_name, s.country
+            SELECT a.id, a.title, a.summary, a.url, a.language, a.degraded,
+                   a.cleaned_by, a.published_at, a.fetched_at,
+                   s.name AS source_name, s.country
             FROM articles a JOIN sources s ON s.id = a.source_id
             ORDER BY COALESCE(a.published_at, a.fetched_at) DESC
             LIMIT 50
@@ -31,9 +32,13 @@ def index(request: Request):
             "sources": conn.execute("SELECT COUNT(*) FROM sources").fetchone()[0],
             "articles": conn.execute("SELECT COUNT(*) FROM articles").fetchone()[0],
         }
+        events = conn.execute(
+            "SELECT id, title, summary, article_count, organized FROM events"
+            " ORDER BY last_updated DESC LIMIT 10").fetchall()
     return templates.TemplateResponse(
         request, "index.html",
-        {"articles": [dict(a) for a in articles], "stats": stats},
+        {"articles": [dict(a) for a in articles], "stats": stats,
+         "events": [dict(e) for e in events]},
     )
 
 
@@ -91,3 +96,19 @@ def sources_board(request: Request):
         {"sources": source_list, "proxy_cfg": proxy_cfg,
          "geo_hints": [dict(h) for h in hints]},
     )
+
+
+@router.get("/login", response_class=HTMLResponse)
+def login_page(request: Request):
+    return templates.TemplateResponse(request, "login.html", {})
+
+
+@router.get("/register", response_class=HTMLResponse)
+def register_page(request: Request):
+    return templates.TemplateResponse(request, "register.html", {})
+
+
+@router.get("/admin", response_class=HTMLResponse)
+def admin_page(request: Request):
+    """审核台：注册审批 / 邀请码 / 受限提示 / 代理配置 / 死信（前端按 me 判定展示）。"""
+    return templates.TemplateResponse(request, "admin.html", {})

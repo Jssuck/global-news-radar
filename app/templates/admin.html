@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+{% block title %}审核台 · Global News Radar{% endblock %}
+{% block content %}
+<h1>审核台</h1>
+<p class="muted" id="whoami">检查登录状态…</p>
+
+<section class="card">
+  <h2>注册审核（pending）</h2>
+  <table id="pending-table">
+    <tr><th>邮箱</th><th>邀请码</th><th>时间</th><th>操作</th></tr>
+  </table>
+  <p class="muted" id="pending-empty">加载中…</p>
+</section>
+
+<section class="card">
+  <h2>邀请码</h2>
+  <form id="invite-form">
+    <input name="code" placeholder="邀请码" required>
+    <input name="max_uses" type="number" value="1" min="1" style="width:80px">
+    <button type="submit">生成</button>
+  </form>
+  <table id="invite-table">
+    <tr><th>码</th><th>已用/上限</th><th>创建时间</th></tr>
+  </table>
+</section>
+
+<section class="card">
+  <h2>地域受限提示</h2>
+  <table id="hint-table">
+    <tr><th>媒体</th><th>所需地域</th><th>状态</th><th>操作</th></tr>
+  </table>
+</section>
+
+<section class="card">
+  <h2>代理配置</h2>
+  <h3>新增 profile</h3>
+  <form id="profile-form">
+    <input name="profile_key" placeholder="profile_key" required>
+    <select name="type"><option>datacenter</option><option>residential</option>
+      <option>isp</option><option>mobile</option></select>
+    <input name="country" placeholder="出口国(us)" maxlength="2" required>
+    <input name="endpoint" placeholder="http://host:port" required>
+    <input name="credentials_env" placeholder="凭据 env 名(可选)">
+    <button type="submit">添加</button>
+  </form>
+  <h3>新增绑定（源级 &gt; 国家级 &gt; 全局）</h3>
+  <form id="binding-form">
+    <select name="scope"><option>source</option><option>country</option>
+      <option>global</option></select>
+    <input name="source_id" type="number" placeholder="source_id(源级)">
+    <input name="country_code" placeholder="国码(国家级)" maxlength="2">
+    <input name="proxy_profile_id" type="number" placeholder="profile_id" required>
+    <input name="priority" type="number" value="100" style="width:70px">
+    <button type="submit">绑定</button>
+  </form>
+  <table id="proxy-table">
+    <tr><th>ID</th><th>类型</th><th>出口</th><th>接入点</th><th>凭据env</th></tr>
+  </table>
+</section>
+
+<section class="card">
+  <h2>死信队列</h2>
+  <table id="dlq-table">
+    <tr><th>ID</th><th>阶段</th><th>文章</th><th>错误</th><th>操作</th></tr>
+  </table>
+</section>
+
+<script>
+async function api(path, opts = {}) {
+  const r = await fetch('/api/v1' + path, opts);
+  if (r.status === 401 || r.status === 403) {
+    document.getElementById('whoami').innerHTML =
+      '需要管理员登录：<a href="/login">登录</a>';
+    throw new Error('unauthorized');
+  }
+  return r.ok ? r.json() : Promise.reject(await r.json());
+}
+
+async function loadAll() {
+  const me = await fetch('/api/v1/auth/me');
+  if (!me.ok) {
+    document.getElementById('whoami').innerHTML =
+      '未登录。<a href="/login">登录</a> 后可管理（需 admin 角色）';
+    return;
+  }
+  const u = await me.json();
+  document.getElementById('whoami').textContent =
+    `已登录 ${u.email}（${u.role}）`;
+  // 注册审核
+  const regs = await api('/admin/registrations?status=pending');
+  const pt = document.getElementById('pending-table');
+  document.getElementById('pending-empty').textContent =
+    regs.total ? '' : '当前无待审核注册';
+  regs.items.forEach(u => {
+    pt.insertAdjacentHTML('beforeend',
+      `<tr><td>${u.email}</td><td>${u.invite_code || '—'}</td>
+       <td class="muted">${u.created_at}</td>
+       <td><button onclick="decide(${u.id},true)">通过</button>
+           <button onclick="decide(${u.id},false)">拒绝</button></td></tr>`);
+  });
+  // 邀请码
+  const inv = await api('/admin/invite-codes');
+  const it = document.getElementById('invite-table');
+  inv.items.forEach(i => it.insertAdjacentHTML('beforeend',
+    `<tr><td><code>${i.code}</code></td><td>${i.used_count}/${i.max_uses}</td>
+     <td class="muted">${i.created_at}</td></tr>`));
+  // geo hints
+  const hints = await api('/geo-hints?status=open');
+  const suspected = await api('/geo-hints?status=suspected');
+  const ht = document.getElementById('hint-table');
+  [...hints.items, ...suspected.items].forEach(h =>
+    ht.insertAdjacentHTML('beforeend',
+      `<tr><td>${h.source_name}</td><td>${(h.required_region || '—').toUpperCase()}</td>
+       <td><span class="badge ${h.status}">${h.status}</span></td>
+       <td><button onclick="resolveHint(${h.id})">标记已处理</button></td></tr>`));
+  // proxy profiles
+  const prof = await api('/proxy-profiles');
+  const pt2 = document.getElementById('proxy-table');
+  prof.items.forEach(p => pt2.insertAdjacentHTML('beforeend',
+    `<tr><td>${p.profile_key}</td><td>${p.type}</td><td>${p.country.toUpperCase()}</td>
+     <td>${p.endpoint}</td><td>${p.credentials_env || '—'}</td></tr>`));
+  // dlq
+  const dlq = await api('/dead-letters?status=open');
+  const dt = document.getElementById('dlq-table');
+  dlq.items.forEach(d => dt.insertAdjacentHTML('beforeend',
+    `<tr><td>${d.id}</td><td>${d.stage}</td><td>${d.article_id || '—'}</td>
+     <td class="muted">${(d.errors || '').slice(0, 120)}</td>
+     <td><button onclick="resolveDlq(${d.id})">解决</button></td></tr>`));
+}
+
+async function decide(id, ok) {
+  await api(`/admin/registrations/${id}/${ok ? 'approve' : 'reject'}`,
+            {method: 'POST'});
+  location.reload();
+}
+async function resolveHint(id) {
+  await api(`/geo-hints/${id}/resolve`, {method: 'POST'});
+  location.reload();
+}
+async function resolveDlq(id) {
+  await api(`/dead-letters/${id}/resolve`, {method: 'POST'});
+  location.reload();
+}
+document.getElementById('invite-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const f = e.target;
+  await api('/admin/invite-codes', {method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({code: f.code.value,
+                          max_uses: +f.max_uses.value})});
+  location.reload();
+});
+document.getElementById('profile-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const f = e.target;
+  await api('/proxy-profiles', {method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({profile_key: f.profile_key.value, type: f.type.value,
+      country: f.country.value, endpoint: f.endpoint.value,
+      credentials_env: f.credentials_env.value || null})});
+  location.reload();
+});
+document.getElementById('binding-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const f = e.target;
+  await api('/proxy-bindings', {method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({scope: f.scope.value,
+      source_id: f.source_id.value ? +f.source_id.value : null,
+      country_code: f.country_code.value || null,
+      proxy_profile_id: +f.proxy_profile_id.value,
+      priority: +f.priority.value})});
+  location.reload();
+});
+loadAll().catch(() => {});
+</script>
+{% endblock %}

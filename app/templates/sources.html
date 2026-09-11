@@ -32,9 +32,22 @@
 {% endif %}
 
 <h2>全部源（{{ sources | length }}）</h2>
+<details class="card">
+  <summary>新增媒体源</summary>
+  <form id="add-source-form" style="margin-top:8px">
+    <input name="name" placeholder="媒体名" required>
+    <input name="base_url" placeholder="https://…" required>
+    <input name="feed_url" placeholder="RSS/sitemap 地址" required>
+    <input name="country" placeholder="国码" maxlength="2" required>
+    <input name="language" placeholder="语种" maxlength="10" required>
+    <select name="discovery_strategy"><option>rss</option><option>sitemap</option></select>
+    <button type="submit">添加（先入库 inactive，复测通过后启用）</button>
+    <span class="muted" id="add-msg"></span>
+  </form>
+</details>
 <table>
   <tr><th>媒体</th><th>国家</th><th>语种</th><th>状态</th><th>代理</th><th>轮询间隔</th>
-      <th>文章数</th><th>最近抓取</th></tr>
+      <th>文章数</th><th>最近抓取</th><th>启用</th></tr>
   {% for s in sources %}
   <tr>
     <td><a href="{{ s.base_url }}" target="_blank" rel="noopener noreferrer">{{ s.name }}</a></td>
@@ -45,9 +58,32 @@
     <td>{{ s.interval_minutes }} 分钟</td>
     <td>{{ s.article_count }}</td>
     <td class="muted">{{ s.last_fetched_at or "未抓取" }}</td>
+    <td><button onclick="toggleSource({{ s.id }}, {{ 0 if s.active else 1 }})">
+      {{ "停用" if s.active else "启用" }}</button></td>
   </tr>
   {% endfor %}
 </table>
+<script>
+async function toggleSource(id, active) {
+  const r = await fetch(`/api/v1/sources/${id}`, {
+    method: 'PATCH', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({active: !!active})});
+  if (r.ok) location.reload();
+}
+document.getElementById('add-source-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const f = e.target;
+  const r = await fetch('/api/v1/sources', {method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({name: f.name.value, base_url: f.base_url.value,
+      feed_url: f.feed_url.value, country: f.country.value,
+      language: f.language.value, discovery_strategy: f.discovery_strategy.value})});
+  const d = await r.json();
+  document.getElementById('add-msg').textContent =
+    r.ok ? `已添加（id=${d.id}，inactive 待复测）` : (d.detail || '失败');
+  if (r.ok) setTimeout(() => location.reload(), 800);
+});
+</script>
 
 <h2>地域代理配置</h2>
 <p class="muted">

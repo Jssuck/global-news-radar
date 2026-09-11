@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}登录 · Global News Radar{% endblock %}
+{% block content %}
+<h1>登录</h1>
+<div class="card" style="max-width:420px">
+  <form id="login-form">
+    <p><label>邮箱<br><input name="email" type="email" required
+      style="width:100%;padding:6px"></label></p>
+    <p><label>密码<br><input name="password" type="password" required
+      style="width:100%;padding:6px"></label></p>
+    <button type="submit">登录</button>
+    <p class="muted" id="msg"></p>
+  </form>
+  <p class="muted">还没有账号？<a href="/register">注册（需管理员审核）</a></p>
+</div>
+<script>
+document.getElementById('login-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const f = e.target;
+  const r = await fetch('/api/v1/auth/login', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({email: f.email.value, password: f.password.value})
+  });
+  if (r.ok) { location.href = '/sources'; return; }
+  const d = await r.json();
+  document.getElementById('msg').textContent = d.detail || '登录失败';
+});
+</script>
+{% endblock %}

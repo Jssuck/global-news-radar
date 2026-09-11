@@ -4,6 +4,20 @@
 <h1>最新新闻</h1>
 <p class="muted">监控 {{ stats.sources }} 个媒体源 · 已收录 {{ stats.articles }} 篇文章
    · 仅展示标题与短摘要，全文请访问原文链接</p>
+
+{% if events %}
+<h2>事件簇</h2>
+{% for e in events %}
+<div class="card">
+  <div><strong>{{ e.title or "（待整理事件）" }}</strong>
+    <span class="badge">{{ e.article_count }} 篇报道</span>
+    {% if not e.organized %}<span class="badge unknown">整理中</span>{% endif %}
+  </div>
+  {% if e.summary %}<p class="muted">{{ e.summary }}</p>{% endif %}
+</div>
+{% endfor %}
+{% endif %}
+
 {% if not articles %}
 <div class="card">暂无文章。启动后系统会按源间隔自动抓取，也可在
   <a href="/docs">API 文档</a> 中调用 <code>POST /api/v1/sources/{id}/check</code>
@@ -13,6 +27,8 @@
 <div class="card">
   <div>
     <a href="{{ a.url }}" target="_blank" rel="noopener noreferrer">{{ a.title }}</a>
+    {% if a.degraded %}<span class="badge geo_restricted">受限降级</span>{% endif %}
+    {% if a.cleaned_by == 'llm' %}<span class="badge">LLM 清洗</span>{% endif %}
   </div>
   <div class="muted">
     {{ a.source_name }} · {{ a.country|upper }} · {{ a.language }} ·
