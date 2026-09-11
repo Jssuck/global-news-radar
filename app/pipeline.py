@@ -27,6 +27,7 @@ from .geo import (
     evaluate_response,
     evaluate_truncation,
 )
+from .llm import gate1_fail_reasons, llm_clean_article, provider_from_settings
 from .proxyconf import alt_country_profile, proxy_url, resolve_proxy
 from .robots import default_robots_cache
 
@@ -110,7 +111,8 @@ def _feed_candidates(feed: Any) -> list[dict]:
 
 
 async def fetch_source(db_path: str, source: dict, settings,
-                       client_factory=None, *, robots=None, limiter=None) -> dict:
+                       client_factory=None, *, robots=None, limiter=None,
+                       llm_provider=None) -> dict:
     """对单个源执行一次抓取，返回结果摘要 dict（同时写 fetch_log 与源状态）。
 
     client_factory 为 None 时在调用时解析默认工厂，测试可 monkeypatch
@@ -124,6 +126,9 @@ async def fetch_source(db_path: str, source: dict, settings,
         client_factory = default_client_factory
     if robots is None:
         robots = default_robots_cache()
+    # 质量门1判负时才进 LLM 二级清洗；provider 未配置则本级整体跳过
+    if llm_provider is None:
+        llm_provider = provider_from_settings(settings)
     now = utcnow()
     result: dict = {"source_id": source["id"], "result": "error", "new_articles": 0,
                     "http_status": None, "detail": None,
@@ -161,7 +166,7 @@ async def fetch_source(db_path: str, source: dict, settings,
                           for loc, lm in recent]
             outcome = await _process_candidates(
                 db_path, client, source, candidates, result, now,
-                settings, robots, limiter)
+                settings, robots, limiter, llm_provider)
             if outcome == "ok":
                 _set_geo(db_path, source["id"], "ok", None, None)
             _finalize(db_path, source, result, now, proxy_key=proxy_key)
@@ -233,7 +238,7 @@ async def fetch_source(db_path: str, source: dict, settings,
         candidates = _feed_candidates(feed)
         outcome = await _process_candidates(
             db_path, client, source, candidates, result, now,
-            settings, robots, limiter)
+            settings, robots, limiter, llm_provider)
 
         # 5) 成功一轮：更新条件 GET 凭据，恢复 geo_status=ok
         if outcome == "ok":
@@ -324,7 +329,7 @@ async def _degraded_fetch(db_path: str, source: dict, settings,
 async def _process_candidates(db_path: str, client: httpx.AsyncClient,
                               source: dict, candidates: list[dict],
                               result: dict, now: str, settings,
-                              robots, limiter) -> str:
+                              robots, limiter, llm_provider=None) -> str:
     """候选 URL 去重过滤 + 逐篇抓取入库；写回 result 计数，返回最终状态。"""
     new_count = 0
     for cand in candidates[: settings.max_articles_per_fetch]:
@@ -342,7 +347,7 @@ async def _process_candidates(db_path: str, client: httpx.AsyncClient,
             continue
         inserted = await _fetch_and_store_article(
             db_path, client, source, cand, norm, digest, now,
-            settings, result, robots, limiter)
+            settings, result, robots, limiter, llm_provider)
         if inserted == "geo_restricted":  # 正文页命中地域封锁 → 整源标记并中止
             result["result"] = "geo_restricted"
             result["detail"] = "文章页返回地域封锁响应"
@@ -361,7 +366,8 @@ async def _process_candidates(db_path: str, client: httpx.AsyncClient,
 async def _fetch_and_store_article(db_path: str, client: httpx.AsyncClient,
                                    source: dict, cand: dict, norm_url: str,
                                    digest: str, now: str, settings,
-                                   result: dict, robots, limiter) -> str | bool:
+                                   result: dict, robots, limiter,
+                                   llm_provider=None) -> str | bool:
     """抓取单篇文章页、抽取正文并入库；返回 True/False/'geo_restricted'/'robots_skipped'。"""
     # 文章页同样过 robots 合规检查（域名级缓存，成本低）
     if not await robots.allowed(client, norm_url, settings.user_agent):
@@ -385,6 +391,32 @@ async def _fetch_and_store_article(db_path: str, client: httpx.AsyncClient,
         return False
 
     meta = extract_article(resp.text, norm_url)
+    raw_text = _strip_tags(resp.text)          # 供质量门/LLM 判定的页面原始文本
+    detected_lang = detect_language(meta["body"] or raw_text,
+                                    fallback=None)
+    reasons = gate1_fail_reasons(meta, detected_lang, source["language"],
+                                 len(raw_text))
+    gate1_failed = bool(reasons)
+    cleaned_by = meta["extractor"]
+
+    if gate1_failed and llm_provider is not None:
+        # 第二级 LLM 清洗：schema 闸门 + 确定性检查 + 重试/DLQ（设计 4.2）
+        cleaned = await llm_clean_article(
+            db_path, llm_provider, raw_text=raw_text, meta=meta,
+            reasons=reasons, fetched_at=now,
+            max_tokens=settings.llm_max_tokens)
+        if cleaned is not None:
+            if cleaned.is_ad_or_boilerplate:
+                # 整体判定为非新闻 → 丢弃分支（设计 4.2.1）
+                result["detail"] = "LLM 判定非新闻内容，丢弃"
+                return False
+            meta = {"title": cleaned.title, "body": cleaned.body,
+                    "published_at": cleaned.published_at,
+                    "authors": ", ".join(cleaned.authors) or None,
+                    "extractor": meta["extractor"]}
+            cleaned_by = "llm"
+            detected_lang = cleaned.language
+
     # 抽取成功率埋点（M1 验收 M1-F2 / stats 导出）
     result["extraction_total"] += 1
     if meta["body"]:
@@ -395,18 +427,19 @@ async def _fetch_and_store_article(db_path: str, client: httpx.AsyncClient,
     feed_summary = _strip_tags(cand.get("summary") or "")
     summary = (body or feed_summary)[:200] or None
     published = meta["published_at"] or cand.get("published")
-    language = detect_language(body or feed_summary, fallback=source["language"])
+    language = detected_lang or source["language"]
 
     with WRITE_LOCK, connect(db_path) as conn:
         try:
             conn.execute(
                 """
                 INSERT INTO articles (source_id, url, url_hash, title, summary,
-                                      body, language, published_at, fetched_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                      body, language, published_at, fetched_at,
+                                      gate1_failed, cleaned_by)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (source["id"], norm_url, digest, title, summary, body,
-                 language, published, now),
+                 language, published, now, int(gate1_failed), cleaned_by),
             )
         except sqlite3.IntegrityError:
             # url_hash 唯一约束冲突 = 并发重复摄入，按精确去重规则丢弃

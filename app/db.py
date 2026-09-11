@@ -49,7 +49,9 @@ CREATE TABLE IF NOT EXISTS articles (
     published_at TEXT,
     fetched_at TEXT NOT NULL,
     degraded INTEGER NOT NULL DEFAULT 0,  -- 1=聚合层降级记录（无正文）
-    event_id INTEGER REFERENCES events(id)  -- 事件簇归属（M2 第三级整理写入）
+    event_id INTEGER REFERENCES events(id),  -- 事件簇归属（M2 第三级整理写入）
+    gate1_failed INTEGER NOT NULL DEFAULT 0, -- 质量门1判负（M2-N2 判负率口径）
+    cleaned_by TEXT                          -- trafilatura-* | newspaper4k | llm | NULL
 );
 
 CREATE TABLE IF NOT EXISTS fetch_log (
@@ -168,6 +170,8 @@ _MIGRATIONS = (
     ("fetch_log", "proxy_key", "proxy_key TEXT"),
     ("articles", "degraded", "degraded INTEGER NOT NULL DEFAULT 0"),
     ("articles", "event_id", "event_id INTEGER REFERENCES events(id)"),
+    ("articles", "gate1_failed", "gate1_failed INTEGER NOT NULL DEFAULT 0"),
+    ("articles", "cleaned_by", "cleaned_by TEXT"),
 )
 
 

@@ -30,6 +30,12 @@ class Settings:
     disable_poller: bool
     max_concurrency: int        # 轮询并发上限（asyncio 信号量）
     per_host_min_interval: float  # 同 host 两次请求最小间隔（秒，礼貌限速）
+    llm_base_url: str | None    # OpenAI 兼容端点（vLLM/LiteLLM），None=LLM 级关闭
+    llm_model: str
+    llm_api_key_env: str | None  # 密钥环境变量名，不落明文
+    llm_timeout: float
+    llm_max_tokens: int         # 单次调用输出上限（成本控制）
+    gdelt_timespan: str         # 受限降级聚合层回看窗口
     user_agent: str = "GlobalNewsRadar-MVP/0.1 (+https://github.com/Jssuck/global-news-radar)"
 
 
@@ -46,4 +52,10 @@ def get_settings() -> Settings:
         disable_poller=env.get("GNR_DISABLE_POLLER", "0") == "1",
         max_concurrency=int(env.get("GNR_MAX_CONCURRENCY", "16")),
         per_host_min_interval=float(env.get("GNR_PER_HOST_MIN_INTERVAL", "2")),
+        llm_base_url=env.get("GNR_LLM_BASE_URL"),
+        llm_model=env.get("GNR_LLM_MODEL", "qwen3-8b"),
+        llm_api_key_env=env.get("GNR_LLM_API_KEY_ENV"),
+        llm_timeout=float(env.get("GNR_LLM_TIMEOUT", "60")),
+        llm_max_tokens=int(env.get("GNR_LLM_MAX_TOKENS", "2048")),
+        gdelt_timespan=env.get("GNR_GDELT_TIMESPAN", "24h"),
     )

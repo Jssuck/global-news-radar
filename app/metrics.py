@@ -45,6 +45,15 @@ def dedup_hits(conn) -> int:
     ).fetchone()[0]
 
 
+def gate1_stats(conn) -> tuple[int, int]:
+    """质量门1判负统计：(判负篇数, 已入库非降级文章数)。M2-N2 判负率口径。"""
+    row = conn.execute(
+        "SELECT COALESCE(SUM(gate1_failed),0) AS failed, COUNT(*) AS total"
+        " FROM articles WHERE degraded = 0"
+    ).fetchone()
+    return row["failed"], row["total"]
+
+
 def compute_metrics(db_path: str) -> dict:
     """M1 验收 metrics（键名与 gate_check.py 的 metrics 输入约定一致）。"""
     with connect(db_path) as conn:
@@ -57,6 +66,7 @@ def compute_metrics(db_path: str) -> dict:
         ext_ok, ext_total = extraction_stats(conn)
         disc_ok, disc_total = discovery_stats(conn)
         dedup = dedup_hits(conn)
+        g1_failed, g1_total = gate1_stats(conn)
     return {
         "sources_onboarded": sources_total,
         "sources_active": sources_active,
@@ -70,4 +80,7 @@ def compute_metrics(db_path: str) -> dict:
         "coverage": (covered / sources_active) if sources_active else None,
         "sources_with_articles": covered,
         "dedup_hits": dedup,
+        "gate1_failed": g1_failed,
+        "gate1_total": g1_total,
+        "gate1_fail_rate": (g1_failed / g1_total) if g1_total else None,
     }
